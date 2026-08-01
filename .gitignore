@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tgz
+coverage/
+.cache/
+.coder/
+*.log
+.DS_Store
+.github/workflows/ci.yml

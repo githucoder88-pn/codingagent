@@ -1,0 +1,78 @@
+{
+  "name": "coder",
+  "version": "0.3.0",
+  "description": "CODER — a lightweight, extensible, globally installed AI coding assistant (Phase 2: Data, Auth, and Control Plane).",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "coder": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:phase2": "vitest run tests/phase2",
+    "test:e2e": "npm run build && vitest run tests/e2e",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:phase2": "node scripts/smoke-phase2.mjs",
+    "prepublishOnly": "npm run typecheck && npm run build && npm test",
+    "smoke:phase3": "node scripts/smoke-phase3.mjs"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "coding-assistant",
+    "openai",
+    "anthropic",
+    "gemini",
+    "openrouter",
+    "chat"
+  ],
+  "dependencies": {
+    "@babel/parser": "^7.29.8",
+    "@babel/traverse": "^7.29.8",
+    "@babel/types": "^7.29.8",
+    "commander": "^12.1.0",
+    "diff": "^7.0.0",
+    "express": "^5.2.1",
+    "pino": "^9.5.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "typescript": "5.9.3",
+    "web-tree-sitter": "^0.24.7",
+    "zod": "^3.24.1"
+  },
+  "optionalDependencies": {
+    "ink": "^5.2.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
+    "@types/diff": "^7.0.2",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.31",
+    "react-devtools-core": "^4.28.5",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.2",
+    "vitest": "^3.0.5"
+  }
+}
