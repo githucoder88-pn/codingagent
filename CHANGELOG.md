@@ -2,6 +2,60 @@
 
 All notable changes to CODER are documented here.
 
+## [0.3.0] — 2026-08-01
+
+### Phase 3 — Workspace Intelligence & Tool Execution Platform
+
+CODER becomes an autonomous coding environment: repository scanning,
+symbol indexing, dependency analysis, semantic search, file editing, shell
+execution, patch generation, checkpoints, git analysis and automatic
+repair — gated by a permission engine.
+
+#### Added
+
+- **Workspace layer** (`src/workspace/`) — repository scanner (gitignore
+  aware, language detection), symbol indexer (TypeScript compiler API +
+  Tree-sitter WASM for Python/Go/Rust/Java/C/C++/C#/PHP + regex fallback),
+  dependency graph (imports/imported-by, packages, cycles, core files),
+  search engine (`find_symbol/definition/reference/imports/exports/
+  related/tests`, content + git-history search), local embeddings
+  (feature-hashed n-gram vectors with cosine similarity) and a context
+  engine (structure, git state, docs, related files).
+- **Commands** — `coder scan`, `coder search`, `coder files`,
+  `coder context`, `coder explain <file> [--ai]`, `coder diff`,
+  `coder undo` / `coder redo`, `coder checkpoints
+  [create|restore|delete]`, `coder tools`, `coder agent <task>`.
+- **Tools** (`src/tools/`) — filesystem (read/write/append/replace/
+  delete/rename/copy/mkdir/list), search, shell (execute_command,
+  run_tests, run_build, install_package, execute_script), git
+  (status/diff/commit/branch/checkout/restore/log), patch (create/apply/
+  validate), memory notes, validation.
+- **Execution layer** (`src/execution/`) — permission engine
+  (safe/balanced/full-auto with one-time approvals), execution scheduler
+  with an undo/redo ledger persisted per workspace, rollback snapshots
+  (taken before every mutation, including new-file deletion on undo),
+  checkpoint engine, command sandbox deny-list, and the agent loop
+  (context → model tool-call protocol → execute → iterate).
+- **Chat agent mode** — `coder chat --safe | --balanced | --full-auto`
+  routes ordinary messages through the agent; slash commands
+  `/files /search /context /git /diff /undo /redo /checkpoints /explain`.
+- **Backend** — `repositories`, `indexed_files`, `embeddings`,
+  `checkpoints`, `patches` and `search_history` tables; workspace API
+  (`/api/workspace/*`), admin repository analytics
+  (`GET /api/admin/workspace`); dashboard Workspace (user) and
+  Repositories (admin) tabs.
+- **Sync** — `coder scan` uploads the repo index (files + embeddings),
+  search queries log to history, checkpoints and agent patches sync —
+  all offline-tolerant.
+- **Offline mock agent** — the mock provider walks a scripted tool
+  sequence (scan → files → git_status → write_file → run_tests →
+  git_commit → summary) so the exit condition is testable without network.
+
+#### Changed
+
+- Version bumped to 0.3.0; `PHASE` = "Phase 3 — Workspace Intelligence &
+  Tool Execution Platform".
+
 ## [0.2.0] — 2026-08-01
 
 ### Phase 2 — Data, Auth, and Control Plane

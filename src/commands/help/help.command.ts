@@ -11,8 +11,17 @@ import { renderBanner, renderTable } from "../../ui/components/primitives.js";
 import { paths } from "../../utils/paths.js";
 
 const COMMANDS = [
-  ["coder chat", "Start an interactive chat session"],
+  ["coder chat [--safe|--balanced|--full-auto]", "Interactive chat (agent mode with a permission level)"],
   ["coder ask <prompt…>", "One-shot prompt (continues the current session)"],
+  ["coder agent <task>", "Autonomous agent run (tools + model)"],
+  ["coder scan", "Scan + index the repository"],
+  ["coder search <q> [--kind …]", "Search content / symbols / files / deps / git"],
+  ["coder files", "List repository files"],
+  ["coder context", "Repository context bundle"],
+  ["coder explain <file>", "Explain a file (symbols, relations, tests)"],
+  ["coder diff | undo | redo", "Workspace changes + rollback"],
+  ["coder checkpoints [create|restore|delete]", "Workspace checkpoints"],
+  ["coder tools", "List workspace tools + permission levels"],
   ["coder login | signup | logout", "Account management"],
   ["coder auth add <provider>", "Store an API key (encrypted, synced)"],
   ["coder auth list | status | remove", "Inspect / remove keys"],
@@ -37,14 +46,18 @@ const COMMANDS = [
 ] as const;
 
 const EXAMPLES = [
+  "coder scan",
+  "coder search authentication",
+  "coder explain src/index.ts",
+  "coder agent \"Fix all TypeScript errors.\" --level balanced",
+  "coder chat --full-auto",
+  "coder checkpoints create --name before-refactor",
   "coder login",
   "coder auth add openrouter",
   "coder settings privacy on",
   'coder ask "Build a Todo application."',
   "coder feedback 5 \"Worked well\"",
   "coder dashboard",
-  "coder model use anthropic/claude-sonnet-4",
-  "coder chat",
 ] as const;
 
 export function renderHelp(theme: Theme): string {

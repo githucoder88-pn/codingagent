@@ -11,6 +11,11 @@ import { type Session } from "../../types/index.js";
 import { knownModelInfo } from "../../providers/known-models.js";
 import { estimateTokens } from "../../utils/format.js";
 import { CoderError } from "../../core/errors/index.js";
+import { WorkspaceManager } from "../../workspace/workspace-manager.js";
+import { ExecutionScheduler } from "../../execution/scheduler.js";
+import { getTool } from "../../tools/registry.js";
+import { runAgent } from "../../execution/agent.js";
+import { type PermissionLevel } from "../../workspace/types.js";
 
 /** View contract implemented by the REPL and Ink UIs. */
 export interface ChatView {
@@ -40,12 +45,23 @@ const SLASH_HELP = [
   "/model <id>      — switch model (persisted)",
   "/provider <id>   — switch provider (persisted)",
   "/sessions        — show the current session id",
+  "/files           — list repository files",
+  "/search <q>      — search the repository (content)",
+  "/context         — show the repository context bundle",
+  "/git             — git status",
+  "/diff            — show workspace changes",
+  "/undo            — undo the last tool edit",
+  "/redo            — redo the last undone edit",
+  "/checkpoints     — list checkpoints",
+  "/explain <file>  — explain a file",
 ].join("\n");
 
 export interface ChatRunOptions {
   /** Force non-streaming turns (overrides settings). */
   stream?: boolean;
   onTurnComplete?: (info: { session: Session; streamed: boolean; durationMs: number }) => void;
+  /** Permission level for workspace tools (enables agent mode). */
+  permission?: PermissionLevel;
 }
 
 export class ChatController {
@@ -81,9 +97,61 @@ export class ChatController {
         if (!keepGoing) break;
         continue;
       }
+      // Agent mode: when a permission level is set, ordinary messages run
+      // through the autonomous tool loop.
+      if (this.opts.permission && this.hasWorkspace()) {
+        await this.agentTurn(view, trimmed);
+        continue;
+      }
       await this.turn(view, trimmed);
     }
     view.close();
+  }
+
+  private hasWorkspace(): boolean {
+    return WorkspaceManager.isWorkspace(process.cwd());
+  }
+
+  /** Run a message through the agent loop with the workspace tools. */
+  private async agentTurn(view: ChatView, task: string): Promise<void> {
+    const root = process.cwd();
+    try {
+      view.status("Agent thinking…");
+      const workspace = new WorkspaceManager({ root });
+      await workspace.ensureIndex();
+      const scheduler = new ExecutionScheduler({
+        cwd: root,
+        level: this.opts.permission!,
+        interactive: process.stdin.isTTY === true,
+        log: (msg) => this.ctx.logger.debug(msg),
+      });
+      const result = await runAgent({
+        task,
+        workspace,
+        registry: this.ctx.registry,
+        providerId: this.session.provider,
+        model: this.session.model,
+        scheduler,
+        onStep: (step) => {
+          if (step.kind === "tool") {
+            view.print(`${this.ctx.theme.accent}→ ${step.text.slice(0, 160)}${this.ctx.theme.reset}`);
+          } else if (step.kind === "error") {
+            view.print(`${this.ctx.theme.warning}⚠ ${step.text.slice(0, 200)}${this.ctx.theme.reset}`);
+          }
+        },
+      });
+      view.statusDone();
+      view.print(`${this.ctx.theme.bold}Agent:${this.ctx.theme.reset} ${result.answer}`);
+      if (result.answer.trim() !== "") {
+        this.session = this.ctx.sessions.addMessage(this.session, {
+          role: "assistant",
+          content: `${task}\n\n[agent] ${result.answer}`,
+        });
+      }
+    } catch (err) {
+      view.statusDone();
+      view.error((err as Error).message);
+    }
   }
 
   /** Handle one user turn (persist + stream + reply). */
@@ -196,9 +264,70 @@ export class ChatController {
           `Current session: ${this.session.id} (${this.session.messages.length} messages, ${this.session.provider}/${this.session.model})`,
         );
         return true;
+      // ------------------------------------------------ workspace commands
+      case "files":
+      case "search":
+      case "context":
+      case "git":
+      case "diff":
+      case "undo":
+      case "redo":
+      case "checkpoints":
+      case "explain": {
+        return this.workspaceSlash(view, command, rest.join(" "));
+      }
       default:
         view.error(`Unknown command "/${command}". Type /help for available commands.`);
         return true;
+    }
+  }
+
+  /** Phase 3 workspace slash commands (run tools directly). */
+  private async workspaceSlash(view: ChatView, command: string, arg: string): Promise<boolean> {
+    const root = process.cwd();
+    if (!this.hasWorkspace()) {
+      view.error("Not inside a workspace directory.");
+      return true;
+    }
+    try {
+      const workspace = new WorkspaceManager({ root });
+      const scheduler = new ExecutionScheduler({
+        cwd: root,
+        level: this.opts.permission ?? "safe",
+        interactive: process.stdin.isTTY === true,
+        log: (msg) => this.ctx.logger.debug(msg),
+      });
+      const toolId = { files: "files", search: "search_content", context: "context", git: "git_status", diff: "git_diff", undo: "undo", redo: "redo", checkpoints: "checkpoints", explain: "read_file" }[command]!;
+      const params: Record<string, unknown> = {};
+      if (command === "search" && arg) params.query = arg;
+      if (command === "diff") params.staged = false;
+      if (command === "explain" && arg) params.path = arg;
+
+      if (command === "checkpoints") {
+        const { RollbackManager } = await import("../../execution/rollback.js");
+        const list = RollbackManager.listCheckpoints(root);
+        view.print(list.length ? list.map((c) => `  ${c.id} (${c.files} files)`).join("\n") : "(no checkpoints — /checkpoints via `coder checkpoints create`)");
+        return true;
+      }
+      if (command === "undo" || command === "redo") {
+        const { ExecutionLedger } = await import("../../execution/ledger.js");
+        const ledger = new ExecutionLedger(root);
+        const result = command === "undo" ? ledger.undo() : ledger.redo();
+        view.print(result ? `  ${command} → ${result.record.tool}` : `  nothing to ${command}`);
+        return true;
+      }
+
+      const tool = getTool(toolId);
+      if (!tool) {
+        view.error(`Tool ${toolId} unavailable.`);
+        return true;
+      }
+      const result = await scheduler.execute(toolId, params);
+      view.print(result.ok ? result.output.slice(0, 4000) : `  ${result.error}`);
+      return true;
+    } catch (err) {
+      view.error((err as Error).message);
+      return true;
     }
   }
 
@@ -215,7 +344,7 @@ export class ChatController {
 /** Convenience: run a chat session with a view and wait for completion. */
 export async function runChat(
   ctx: AppContext,
-  opts: { view: ChatView; stream?: boolean; onTurnComplete?: ChatRunOptions["onTurnComplete"] },
+  opts: { view: ChatView; stream?: boolean; onTurnComplete?: ChatRunOptions["onTurnComplete"]; permission?: PermissionLevel },
 ): Promise<void> {
   const controller = new ChatController(ctx, opts);
   await controller.run(opts.view);

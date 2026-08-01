@@ -106,6 +106,69 @@ CREATE TABLE IF NOT EXISTS model_metadata (
   PRIMARY KEY (provider, model)
 );
 
+-- Phase 3: workspace intelligence records
+CREATE TABLE IF NOT EXISTS repositories (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  path TEXT NOT NULL,
+  name TEXT NOT NULL,
+  language TEXT,
+  file_count INTEGER DEFAULT 0,
+  symbol_count INTEGER DEFAULT 0,
+  line_count INTEGER DEFAULT 0,
+  indexed_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (user_id, path)
+);
+
+CREATE TABLE IF NOT EXISTS indexed_files (
+  id TEXT PRIMARY KEY,
+  repository_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  path TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  size INTEGER,
+  language TEXT,
+  indexed_at TEXT NOT NULL,
+  UNIQUE (repository_id, path)
+);
+
+CREATE TABLE IF NOT EXISTS embeddings (
+  id TEXT PRIMARY KEY,
+  repository_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  path TEXT NOT NULL,
+  vector TEXT NOT NULL,
+  model TEXT NOT NULL DEFAULT 'coder-local-hash-v1',
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS checkpoints (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  repository_id TEXT REFERENCES repositories(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  file_count INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS patches (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  repository_id TEXT REFERENCES repositories(id) ON DELETE CASCADE,
+  summary TEXT,
+  diff TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS search_history (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  query TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'content',
+  result_count INTEGER,
+  created_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_prompts_user ON prompts(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_prompts_training ON prompts(for_training, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_responses_prompt ON responses(prompt_id);

@@ -7,8 +7,8 @@
 
 export const APP_NAME = "coder";
 export const APP_DISPLAY_NAME = "CODER";
-export const VERSION = "0.2.0";
-export const PHASE = "Phase 2 — Data, Auth, and Control Plane";
+export const VERSION = "0.3.0";
+export const PHASE = "Phase 3 — Workspace Intelligence & Tool Execution Platform";
 
 /** Default directory holding all user data: `~/.coder` (override with CODER_HOME). */
 export const DEFAULT_CONFIG_DIR_NAME = ".coder";

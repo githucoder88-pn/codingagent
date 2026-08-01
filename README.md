@@ -2,7 +2,7 @@
 
 **A lightweight, extensible, globally installed AI coding assistant.**
 
-**Version 0.2.0 — Phase 2 (Data, Auth, and Control Plane)**
+**Version 0.3.0 — Phase 3 (Workspace Intelligence & Tool Execution Platform)**
 
 CODER is a command-line AI assistant that talks to OpenAI, Anthropic, Gemini
 and OpenRouter from your terminal — and now it is also a **platform**: secure
@@ -35,6 +35,20 @@ $ coder chat                        # Ink TUI / REPL, streaming
 All Phase 1 behavior (providers, sessions, config, themes, logging, offline
 mock provider) is unchanged. Phase 2 layers accounts and a control plane on
 top — you can use CODER fully offline without an account.
+
+## What Phase 3 adds (workspace intelligence)
+
+| Area | What you get |
+| --- | --- |
+| **Repository intelligence** | `coder scan` (directories/files/functions/classes/imports/tests), symbol indexing via TypeScript API + Tree-sitter (WASM) for 10 languages, dependency graph, semantic search, local embeddings, context bundles |
+| **Tools** | `coder tools` — filesystem, search, shell, git, patch, memory, validation tools (35+ tool ids) |
+| **Autonomous agent** | `coder agent "<task>"` or `coder chat --safe/--balanced/--full-auto` — context → model tool-call protocol → execute → iterate (analyze, edit, test, commit) |
+| **Permission engine** | safe (read-only) / balanced (writes + patches + git) / full-auto (shell), one-time approvals, command sandbox deny-list |
+| **Rollback** | `coder diff`, `coder undo`, `coder redo` — snapshots before every mutation, persisted per workspace |
+| **Checkpoints** | `coder checkpoints create/restore/delete` — file snapshots in `~/.coder/checkpoints` |
+| **Commands** | `coder search`, `coder files`, `coder context`, `coder explain <file> [--ai]` |
+| **Chat slash commands** | `/files /search /context /git /diff /undo /redo /checkpoints /explain` |
+| **Backend + dashboard** | repositories/indexed_files/embeddings/checkpoints/patches/search_history tables, workspace API, admin repository analytics, Workspace + Repositories dashboard tabs |
 
 ## What Phase 2 adds
 
@@ -73,8 +87,15 @@ coder delete-account --yes         # permanent erasure
 ## Commands
 
 ```
-coder chat                          Interactive chat (Ink TUI / REPL)
+coder chat [--safe|--balanced|--full-auto]   Interactive chat / agent mode
+coder agent <task> [--level …]               Autonomous agent run
 coder ask <prompt…>                 One-shot prompt (continues current session)
+coder scan [--dir <path>]           Scan + index the repository
+coder search <q> [--kind …]         Search content/symbols/files/deps/git
+coder files | context | explain <file>
+coder diff | undo | redo            Workspace changes + rollback
+coder checkpoints [create|restore|delete]
+coder tools                         List tools + permission levels
 coder signup | login | logout       Account management
 coder auth add <provider>           Store an API key (encrypted, synced)
 coder auth list | status | remove
@@ -123,6 +144,7 @@ npm run build                       # dist/cli.js + dist/server.js + dist/web
 - [Configuration](docs/configuration.md) — config file, env vars, sessions, logging
 - [Security model](docs/security.md) — encryption, hashing, auth, privacy, training policy
 - [Backend API](docs/backend-api.md) — full control-plane API reference
+- [Workspace](docs/workspace.md) — scanning, indexing, tools, permissions, agent
 
 ## License
 

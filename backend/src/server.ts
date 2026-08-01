@@ -17,6 +17,7 @@ import { usersRouter } from "./api/users.routes.js";
 import { chatRouter } from "./api/chat.routes.js";
 import { adminRouter } from "./api/admin.routes.js";
 import { dataRouter } from "./api/data.routes.js";
+import { workspaceRouter } from "./api/workspace.routes.js";
 import { errorHandler, authMiddleware } from "./auth/middleware.js";
 import { createUser, findUserByEmail, setUserRole, writeAudit } from "./database/repos.js";
 import { scryptHash } from "./auth/auth.js";
@@ -86,6 +87,7 @@ export async function createServer(config: ServerConfig): Promise<BackendContext
   );
   app.use(`${API_PREFIX}/users`, usersRouter(db));
   app.use(`${API_PREFIX}/chat`, chatRouter({ db, keyManager }));
+  app.use(`${API_PREFIX}/workspace`, workspaceRouter(db));
   app.use(`${API_PREFIX}/admin`, adminRouter({ db, keyManager }));
   app.use(API_PREFIX, dataRouter(db));
 

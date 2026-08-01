@@ -51,10 +51,35 @@ export class MockProvider implements Provider {
     return {
       id: `mock-${Date.now()}`,
       model: request.model,
-      content: this.reply(request),
+      content: this.agentReply(request),
       usage: { inputTokens: 1, outputTokens: 1 },
       createdAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Agent-mode behavior (Phase 3): when the system prompt carries the
+   * CODER TOOLS marker, the mock walks a scripted tool-use sequence so the
+   * agent loop is fully testable offline. The script depends on how many
+   * assistant tool-calls have already happened:
+   *   scan → files → git_status → run_tests → git_commit → final text
+   */
+  private agentReply(request: ChatRequest): string {
+    const system = request.messages.find((m) => m.role === "system")?.content ?? "";
+    if (!system.includes("CODER TOOLS")) return this.reply(request);
+
+    const assistantTurns = request.messages.filter((m) => m.role === "assistant").length;
+    const sequence: string[] = [
+      JSON.stringify({ tool: "scan" }),
+      JSON.stringify({ tool: "files", params: {} }),
+      JSON.stringify({ tool: "git_status" }),
+      JSON.stringify({ tool: "write_file", params: { path: "AGENT.md", content: "# Agent run\n\nAnalyzed by the CODER agent.\n" } }),
+      JSON.stringify({ tool: "run_tests", params: {} }),
+      JSON.stringify({ tool: "git_commit", params: { message: "chore: agent changes" } }),
+      "Task complete. Analyzed the repository, added a change, ran the tests, and committed the result.",
+    ];
+    const step = sequence[Math.min(assistantTurns, sequence.length - 1)]!;
+    return `\`\`\`json\n${step}\n\`\`\``;
   }
 
   async *stream(request: ChatRequest): AsyncGenerator<string> {

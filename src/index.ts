@@ -47,6 +47,25 @@ export { loadConfig as loadBackendConfig } from "../backend/src/config.js";
 export { KeyManager } from "../backend/src/encryption/key-manager.js";
 export { verifyFirebaseToken } from "../backend/src/auth/auth.js";
 
+// Phase 3 — workspace intelligence
+export { WorkspaceManager } from "./workspace/workspace-manager.js";
+export { RepositoryScanner } from "./workspace/repository/scanner.js";
+export { indexRepository, loadCachedIndex } from "./workspace/indexer/indexer.js";
+export { SearchEngine } from "./workspace/search/search-engine.js";
+export { DependencyGraph } from "./workspace/dependency/graph.js";
+export { ContextEngine } from "./workspace/context/engine.js";
+export { EmbeddingStore } from "./workspace/embeddings/store.js";
+export { LocalHashEmbeddingProvider, cosineSimilarity, rankBySimilarity } from "./workspace/embeddings/embeddings.js";
+export { parseFile } from "./workspace/parser/index.js";
+export { ALL_TOOLS, getTool, listTools, renderToolSchema } from "./tools/registry.js";
+export { ExecutionScheduler } from "./execution/scheduler.js";
+export { ExecutionLedger } from "./execution/ledger.js";
+export { RollbackManager } from "./execution/rollback.js";
+export { checkPermission, levelAllows } from "./execution/permissions.js";
+export { isDeniedCommand } from "./execution/sandbox.js";
+export { runAgent, parseToolCall } from "./execution/agent.js";
+export { computeDiff, applyUnifiedPatch } from "./tools/patch.js";
+
 // Configuration
 export { ConfigManager } from "./config/manager/config-manager.js";
 export { configSchema, providersSchema } from "./config/schema/schema.js";

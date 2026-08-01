@@ -42,6 +42,22 @@ import {
   adminRotateKeyCommand,
   type AdminListOptions,
 } from "./admin/admin.command.js";
+import { scanCommand } from "./workspace/scan.command.js";
+import { searchCommand } from "./workspace/search.command.js";
+import { filesCommand } from "./workspace/files.command.js";
+import { contextCommand } from "./workspace/context.command.js";
+import { explainCommand } from "./workspace/explain.command.js";
+import {
+  diffCommand,
+  undoCommand,
+  redoCommand,
+  checkpointsCommand,
+  checkpointCreateCommand,
+  checkpointRestoreCommand,
+  checkpointDeleteCommand,
+  toolsCommand,
+} from "./workspace/workspace.commands.js";
+import { agentCommand } from "./agent/agent.command.js";
 import { renderHelp } from "./help/help.command.js";
 import { debugEnabled } from "../logger/console/console-logger.js";
 
@@ -85,11 +101,15 @@ export function buildProgram(createCtx?: (opts: GlobalOptions) => Promise<AppCon
   // ------------------------------------------------------------- chat
   program
     .command("chat")
-    .description("Start an interactive chat session")
+    .description("Start an interactive chat session (--safe/--balanced/--full-auto enable agent mode)")
     .option("--no-stream", "disable streaming responses")
     .option("--repl", "force the readline REPL UI (no Ink TUI)")
-    .action(wrap(async (ctx, opts: { stream: boolean; repl: boolean }) => {
-      return chatCommand(ctx, { stream: opts.stream, forceRepl: opts.repl });
+    .option("--safe", "agent mode: read-only tools")
+    .option("--balanced", "agent mode: writes, patches, git commits")
+    .option("--full-auto", "agent mode: everything incl. shell execution")
+    .action(wrap(async (ctx, opts: { stream: boolean; repl: boolean; safe?: boolean; balanced?: boolean; fullAuto?: boolean }) => {
+      const level = opts.fullAuto ? "full-auto" : opts.balanced ? "balanced" : opts.safe ? "safe" : undefined;
+      return chatCommand(ctx, { stream: opts.stream, forceRepl: opts.repl, level });
     }));
 
   program
@@ -533,6 +553,142 @@ export function buildProgram(createCtx?: (opts: GlobalOptions) => Promise<AppCon
     .command("sync")
     .description("Push local records to the backend (same as `coder sync`)")
     .action(wrap(async (ctx) => syncCommand(ctx)));
+
+  // ---------------------------------------------------------- workspace
+  program
+    .command("scan")
+    .description("Scan and index the repository (symbols, dependencies, tests)")
+    .option("--dir <path>", "workspace root (default: current directory)")
+    .option("--refresh", "force a fresh scan")
+    .option("--json", "raw JSON output")
+    .option("--no-sync", "skip the backend sync")
+    .action(wrap(async (ctx, opts: { dir?: string; refresh?: boolean; json?: boolean; sync: boolean }) => {
+      return scanCommand(ctx, { dir: opts.dir, refresh: opts.refresh, json: opts.json, noSync: !opts.sync });
+    }));
+
+  program
+    .command("search <query>")
+    .description("Search the repository (content, symbols, files, dependencies, git history)")
+    .option("--dir <path>", "workspace root")
+    .option("--kind <kind>", "content | symbol | file | definition | references | dependencies | git", "content")
+    .option("--case-sensitive", "case-sensitive match")
+    .option("--limit <n>", "max results", "50")
+    .option("--json", "raw JSON output")
+    .action(wrap(async (ctx, query: string, opts: { dir?: string; kind?: string; caseSensitive?: boolean; limit?: string; json?: boolean }) => {
+      return searchCommand(ctx, {
+        query,
+        dir: opts.dir,
+        kind: (opts.kind ?? "content") as "content" | "symbol" | "file" | "definition" | "references" | "dependencies" | "git",
+        caseSensitive: opts.caseSensitive,
+        limit: Number(opts.limit ?? 50),
+        json: opts.json,
+      });
+    }));
+
+  program
+    .command("files")
+    .description("List the repository's source files")
+    .option("--dir <path>", "workspace root")
+    .option("--pattern <pattern>", "filter by path fragment")
+    .option("--all", "include non-source files")
+    .option("--limit <n>", "max entries", "200")
+    .option("--json", "raw JSON output")
+    .action(wrap(async (ctx, opts: { dir?: string; pattern?: string; all?: boolean; limit?: string; json?: boolean }) => {
+      return filesCommand(ctx, { dir: opts.dir, pattern: opts.pattern, all: opts.all, limit: Number(opts.limit ?? 200), json: opts.json });
+    }));
+
+  program
+    .command("context")
+    .description("Build and print the repository context bundle")
+    .option("--dir <path>", "workspace root")
+    .option("--json", "raw JSON output")
+    .action(wrap(async (ctx, opts: { dir?: string; json?: boolean }) => contextCommand(ctx, opts)));
+
+  program
+    .command("explain <file>")
+    .description("Explain a file (symbols, imports, relations) or --symbol <name>")
+    .option("--dir <path>", "workspace root")
+    .option("--symbol <name>", "focus on a symbol")
+    .option("--ai", "add a model-generated explanation")
+    .option("--json", "raw JSON output")
+    .action(wrap(async (ctx, file: string, opts: { dir?: string; symbol?: string; ai?: boolean; json?: boolean }) => {
+      return explainCommand(ctx, { file, dir: opts.dir, symbol: opts.symbol, ai: opts.ai, json: opts.json });
+    }));
+
+  program
+    .command("diff")
+    .description("Show workspace changes (git diff, or tool-edit diffs)")
+    .option("--dir <path>", "workspace root")
+    .option("--staged", "git diff --cached")
+    .option("--json", "raw JSON output")
+    .action(wrap(async (ctx, opts: { dir?: string; staged?: boolean; json?: boolean }) => diffCommand(ctx, opts)));
+
+  program
+    .command("undo")
+    .description("Undo the last tool edit (restores the original file content)")
+    .option("--dir <path>", "workspace root")
+    .action(wrap(async (ctx, opts: { dir?: string }) => undoCommand(ctx, opts)));
+
+  program
+    .command("redo")
+    .description("Redo the last undone edit")
+    .option("--dir <path>", "workspace root")
+    .action(wrap(async (ctx, opts: { dir?: string }) => redoCommand(ctx, opts)));
+
+  const checkpoints = program
+    .command("checkpoints")
+    .description("Manage workspace checkpoints")
+    .option("--dir <path>", "workspace root")
+    .action(wrap(async (ctx, opts: { dir?: string }) => checkpointsCommand(ctx, opts)));
+
+  checkpoints
+    .command("create")
+    .description("Create a checkpoint of the workspace")
+    .option("--name <name>", "checkpoint name")
+    .action(wrap(async (ctx, opts: { name?: string }, cmd: Command) => {
+      const parent = cmd.parent?.opts<{ dir?: string }>() ?? {};
+      return checkpointCreateCommand(ctx, { dir: parent.dir, name: opts.name });
+    }));
+
+  checkpoints
+    .command("restore <id>")
+    .description("Restore the workspace from a checkpoint")
+    .action(wrap(async (ctx, id: string, _opts: Record<string, never>, cmd: Command) => {
+      const parent = cmd.parent?.opts<{ dir?: string }>() ?? {};
+      return checkpointRestoreCommand(ctx, { id, dir: parent.dir });
+    }));
+
+  checkpoints
+    .command("delete <id>")
+    .description("Delete a checkpoint")
+    .action(wrap(async (ctx, id: string, _opts: Record<string, never>, cmd: Command) => {
+      const parent = cmd.parent?.opts<{ dir?: string }>() ?? {};
+      return checkpointDeleteCommand(ctx, { id, dir: parent.dir });
+    }));
+
+  program
+    .command("tools")
+    .description("List the available workspace tools and their permission levels")
+    .action(wrap(async (ctx) => toolsCommand(ctx)));
+
+  program
+    .command("agent <task...>")
+    .description("Run an autonomous agent task on the repository (tools + model)")
+    .option("--dir <path>", "workspace root")
+    .option("--level <level>", "safe | balanced | full-auto", "balanced")
+    .option("--provider <id>", "provider to use")
+    .option("--model <id>", "model to use")
+    .option("--no-sync", "do not persist patch records to the backend")
+    .action(wrap(async (ctx, taskArgs: string[], opts: { dir?: string; level?: string; provider?: string; model?: string; sync: boolean }) => {
+      return agentCommand(ctx, {
+        task: taskArgs.join(" "),
+        dir: opts.dir,
+        level: (opts.level ?? "balanced") as "safe" | "balanced" | "full-auto",
+        provider: opts.provider,
+        model: opts.model,
+        noSync: !opts.sync,
+      });
+    }));
 
   // -------------------------------------------------------------- help
   program.addHelpCommand(false);

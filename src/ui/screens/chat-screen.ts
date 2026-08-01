@@ -16,17 +16,19 @@ export interface ChatScreenOptions {
   forceRepl?: boolean;
   /** Called after each completed turn (recording/sync hook). */
   onTurnComplete?: (info: { session: import("../../types/index.js").Session; streamed: boolean; durationMs: number }) => void;
+  /** Permission level (enables agent mode + workspace slash commands). */
+  permission?: import("../../workspace/types.js").PermissionLevel;
 }
 
 export async function runChatScreen(ctx: AppContext, opts: ChatScreenOptions = {}): Promise<void> {
   if (!opts.forceRepl && isTty(process.stdin) && isTty(process.stdout)) {
     try {
       const { renderInkChat } = await import("./ink-chat.js");
-      await renderInkChat(ctx, { stream: opts.stream, onTurnComplete: opts.onTurnComplete });
+      await renderInkChat(ctx, { stream: opts.stream, onTurnComplete: opts.onTurnComplete, permission: opts.permission });
       return;
     } catch (err) {
       ctx.logger.warn(`Ink UI unavailable (${(err as Error).message}); using the standard REPL.`);
     }
   }
-  await runReplChat(ctx, { stream: opts.stream, onTurnComplete: opts.onTurnComplete });
+  await runReplChat(ctx, { stream: opts.stream, onTurnComplete: opts.onTurnComplete, permission: opts.permission });
 }

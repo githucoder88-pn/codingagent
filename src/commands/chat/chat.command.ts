@@ -7,7 +7,10 @@ import { runChatScreen, type ChatScreenOptions } from "../../ui/screens/chat-scr
 import { runAsk, type AskOptions } from "../../ui/screens/ask.js";
 import { AuthError, UsageError } from "../../core/errors/index.js";
 
-export interface ChatCommandOptions extends ChatScreenOptions {}
+export interface ChatCommandOptions extends ChatScreenOptions {
+  /** Permission level: safe | balanced | full-auto (enables agent mode). */
+  level?: "safe" | "balanced" | "full-auto";
+}
 
 export async function chatCommand(ctx: AppContext, opts: ChatCommandOptions = {}): Promise<number> {
   const settings = ctx.settings();
@@ -19,6 +22,7 @@ export async function chatCommand(ctx: AppContext, opts: ChatCommandOptions = {}
   }
   await runChatScreen(ctx, {
     ...opts,
+    permission: opts.level,
     onTurnComplete: (info) => {
       // Phase 2: record each completed turn (privacy-gated, best-effort).
       void (async () => {

@@ -22,7 +22,7 @@ export default defineConfig({
   target: "node22",
   platform: "node",
   bundle: true,
-  external: ["commander", "pino", "zod", "ink", "react", "express"],
+  external: ["commander", "pino", "zod", "ink", "react", "express", "diff", "typescript", "web-tree-sitter", "tree-sitter-wasms"],
   treeshake: true,
   minify: false,
   sourcemap: false,

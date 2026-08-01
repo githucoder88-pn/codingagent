@@ -121,6 +121,27 @@ export function adminRouter(deps: AdminRouterDeps): Router {
     }),
   );
 
+  // GET /api/admin/workspace — repository analytics + storage metrics.
+  router.get(
+    "/workspace",
+    asyncHandler(async (_req: AuthedRequest, res) => {
+      const byLanguage = db.raw
+        .prepare(
+          "SELECT COALESCE(language, 'unknown') AS language, COUNT(*) AS c, SUM(file_count) AS files FROM repositories GROUP BY language ORDER BY c DESC",
+        )
+        .all() as Array<{ language: string; c: number; files: number | null }>;
+      const totals = db.raw
+        .prepare(
+          "SELECT (SELECT COUNT(*) FROM repositories) repos, (SELECT COUNT(*) FROM indexed_files) files, (SELECT COUNT(*) FROM embeddings) embeddings, (SELECT COUNT(*) FROM checkpoints) checkpoints, (SELECT COUNT(*) FROM patches) patches, (SELECT COUNT(*) FROM search_history) searches",
+        )
+        .get() as Record<string, number>;
+      res.json({
+        repositories: byLanguage.map((r) => ({ language: r.language, count: r.c, files: r.files ?? 0 })),
+        totals,
+      });
+    }),
+  );
+
   // GET /api/admin/usage
   router.get(
     "/usage",

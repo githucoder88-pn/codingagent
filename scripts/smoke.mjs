@@ -47,7 +47,7 @@ let failures = 0;
 try {
   console.log("Smoke testing the Phase 1 exit-criteria flow (mock provider):\n");
 
-  failures += check("version", run(["--version"], env).stdout.trim() === "0.2.0") ? 0 : 1;
+  failures += check("version", run(["--version"], env).stdout.trim() === "0.3.0") ? 0 : 1;
   failures += check("help renders", run(["help"], env).stdout.includes("Usage: coder")) ? 0 : 1;
 
   const providerUse = run(["provider", "use", "mock"], env);

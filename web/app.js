@@ -265,6 +265,58 @@ function viewKeys() {
   load().catch((err) => toast(err.message, "err"));
 }
 
+function viewWorkspace(user) {
+  api("/workspace").then((data) => {
+    const el = $("#workspace-panel");
+    if (!el) return;
+    const repos = data.repositories || [];
+    const searches = data.searchHistory || [];
+    const checkpoints = data.checkpoints || [];
+    const patches = data.patches || [];
+    el.innerHTML = `
+      <h2>Workspace intelligence</h2>
+      <h3>Repositories (${repos.length})</h3>
+      ${repos.length === 0
+        ? `<p class="muted">No repositories synced yet — run <code>coder scan</code> in a repository while signed in.</p>`
+        : `<table><thead><tr><th>Name</th><th>Language</th><th>Files</th><th>Symbols</th><th>Lines</th><th>Indexed</th></tr></thead>
+           <tbody>${repos
+             .map(
+               (r) => `<tr><td><strong>${esc(r.name)}</strong></td><td>${esc(r.language || "—")}</td><td>${r.fileCount}</td><td>${r.symbolCount}</td><td>${r.lineCount}</td><td>${r.indexedAt ? fmt(r.indexedAt) : "—"}</td></tr>`,
+             )
+             .join("")}</tbody></table>`}
+      <h3>Search history (${searches.length})</h3>
+      ${searches.length === 0
+        ? `<p class="muted">No searches recorded.</p>`
+        : `<table><thead><tr><th>When</th><th>Kind</th><th>Query</th><th>Results</th></tr></thead>
+           <tbody>${searches
+             .map((s) => `<tr><td>${fmt(s.createdAt)}</td><td>${esc(s.kind)}</td><td class="mono">${esc(s.query)}</td><td>${s.resultCount ?? "—"}</td></tr>`)
+             .join("")}</tbody></table>`}
+      <h3>Checkpoints (${checkpoints.length})</h3>
+      ${checkpoints.length === 0
+        ? `<p class="muted">No checkpoints — run <code>coder checkpoints create</code>.</p>`
+        : `<table><thead><tr><th>Name</th><th>Files</th><th>Created</th></tr></thead>
+           <tbody>${checkpoints
+             .map((c) => `<tr><td class="mono">${esc(c.name)}</td><td>${c.fileCount}</td><td>${fmt(c.createdAt)}</td></tr>`)
+             .join("")}</tbody></table>`}
+      <h3>Patches (${patches.length})</h3>
+      ${patches.length === 0
+        ? `<p class="muted">No patches recorded yet.</p>`
+        : `<table><thead><tr><th>When</th><th>Summary</th><th>Diff size</th></tr></thead>
+           <tbody>${patches
+             .map((p) => `<tr><td>${fmt(p.createdAt)}</td><td>${esc(p.summary || "—")}</td><td>${p.diffLength} bytes</td></tr>`)
+             .join("")}</tbody></table>`}`;
+  }).catch((err) => toast(err.message, "err"));
+
+  app.innerHTML = `
+    <div class="panel" id="workspace-panel"><div class="loading">Loading…</div></div>
+    <div class="panel">
+      <h2>How it works</h2>
+      <p class="muted">The CLI scans repositories (<code>coder scan</code>), indexes symbols and dependencies,
+        and syncs the index, search history, checkpoints and patches here when you are signed in. Embeddings are
+        computed locally and stored per file.</p>
+    </div>`;
+}
+
 function viewSettings(user) {
   api("/users/me").then(({ settings }) => {
     const el = $("#privacy-panel");
@@ -355,11 +407,12 @@ function viewAdmin() {
         <button data-tab="training" class="secondary">Training</button>
         <button data-tab="usage" class="secondary">Usage</button>
         <button data-tab="models" class="secondary">Models</button>
+        <button data-tab="repositories" class="secondary">Repositories</button>
       </div>
       <div id="admin-content"><div class="loading">Loading…</div></div>
     </div>`;
 
-  const tabs = { users: adminUsers, prompts: adminPrompts, feedback: adminFeedback, logs: adminLogs, training: adminTraining, usage: adminUsage, models: adminModels };
+  const tabs = { users: adminUsers, prompts: adminPrompts, feedback: adminFeedback, logs: adminLogs, training: adminTraining, usage: adminUsage, models: adminModels, repositories: adminRepositories };
   document.querySelectorAll("[data-tab]").forEach((btn) =>
     btn.addEventListener("click", () => tabs[btn.dataset.tab]().catch((err) => toast(err.message, "err"))),
   );
@@ -453,6 +506,28 @@ async function adminModels() {
            .join("")}</tbody></table>`}`;
 }
 
+async function adminRepositories() {
+  const data = await api("/admin/workspace");
+  const totals = data.totals || {};
+  $("#admin-content").innerHTML = `
+    <h3>Repository analytics</h3>
+    <div class="row">
+      <div class="grow"><strong>${totals.repos}</strong> repositories</div>
+      <div class="grow"><strong>${totals.files}</strong> indexed files</div>
+      <div class="grow"><strong>${totals.embeddings}</strong> embeddings</div>
+      <div class="grow"><strong>${totals.checkpoints}</strong> checkpoints</div>
+      <div class="grow"><strong>${totals.patches}</strong> patches</div>
+      <div class="grow"><strong>${totals.searches}</strong> searches</div>
+    </div>
+    <h3>By language</h3>
+    ${data.repositories.length === 0
+      ? `<p class="muted">No repositories synced.</p>`
+      : `<table><thead><tr><th>Language</th><th>Repositories</th><th>Files</th></tr></thead>
+         <tbody>${data.repositories
+           .map((r) => `<tr><td>${esc(r.language)}</td><td>${r.count}</td><td>${r.files}</td></tr>`)
+           .join("")}</tbody></table>`}`;
+}
+
 async function adminUsage() {
   const { usage } = await api("/admin/usage?days=14");
   const max = Math.max(1, ...usage.promptsPerDay.map((d) => d.count));
@@ -503,6 +578,7 @@ function render() {
         else viewOverview(user);
       } else if (route === "history") viewHistory();
       else if (route === "keys") viewKeys();
+      else if (route === "workspace") viewWorkspace(user);
       else if (route === "settings") viewSettings(user);
       else viewOverview(user);
     })

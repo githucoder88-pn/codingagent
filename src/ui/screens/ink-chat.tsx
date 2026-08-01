@@ -221,13 +221,17 @@ export class InkChatView implements ChatView {
 /** Render the Ink TUI. Resolves when the user exits. */
 export async function renderInkChat(
   ctx: AppContext,
-  opts?: { stream?: boolean; onTurnComplete?: (info: { session: import("../../types/index.js").Session; streamed: boolean; durationMs: number }) => void },
+  opts?: {
+    stream?: boolean;
+    onTurnComplete?: (info: { session: import("../../types/index.js").Session; streamed: boolean; durationMs: number }) => void;
+    permission?: import("../../workspace/types.js").PermissionLevel;
+  },
 ): Promise<void> {
   const { default: ReactDefault } = await import("react");
   const ink = await import("ink");
   const { ChatController } = await import("./chat-controller.js");
 
-  const controller = new ChatController(ctx, { stream: opts?.stream, onTurnComplete: opts?.onTurnComplete });
+  const controller = new ChatController(ctx, { stream: opts?.stream, onTurnComplete: opts?.onTurnComplete, permission: opts?.permission });
   const view = new InkChatView(ctx, controller);
 
   const App: React.FC = () => {

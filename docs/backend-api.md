@@ -67,6 +67,22 @@ provider · `6` config.
 | GET | `/api/admin/models?search=<provider>` | Provider/model metadata (usage counts, first/last seen) |
 | POST | `/api/admin/rotate-key` | Rotate master key + re-encrypt all keys (superadmin) |
 
+## Workspace (Phase 3)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/workspace` | Repositories + search history + checkpoints + patches |
+| POST | `/api/workspace/repositories` | Upsert a repository index summary |
+| GET | `/api/workspace/repositories` | List the user's repositories |
+| DELETE | `/api/workspace/repositories/:id` | Remove a repository record |
+| POST | `/api/workspace/repositories/:id/files` | Replace the indexed-files set (by path+hash) |
+| POST | `/api/workspace/repositories/:id/embeddings` | Replace file embedding vectors |
+| POST | `/api/workspace/search-history` | Log a search query |
+| POST | `/api/workspace/checkpoints` | Record a checkpoint |
+| DELETE | `/api/workspace/checkpoints/:id` | Remove a checkpoint record |
+| POST | `/api/workspace/patches` | Record an agent-generated patch (unified diff) |
+| GET | `/api/admin/workspace` | Repository analytics + storage totals (admin) |
+
 ## Data ownership
 
 | Method | Path | Description |
@@ -78,7 +94,8 @@ provider · `6` config.
 
 SQLite (`~/.coder/server/coder.db`, node:sqlite, WAL). Tables: `users`,
 `api_sessions`, `provider_keys`, `prompts`, `responses`, `feedback`,
-`audit_logs`, `training_consent`.
+`audit_logs`, `training_consent`, `model_metadata`, `repositories`,
+`indexed_files`, `embeddings`, `checkpoints`, `patches`, `search_history`.
 
 ## Server administration
 

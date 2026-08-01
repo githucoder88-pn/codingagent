@@ -144,11 +144,15 @@ export class ReplChatView implements ChatView {
 /** Run the REPL chat (used when Ink is unavailable or stdin is piped). */
 export async function runReplChat(
   ctx: AppContext,
-  opts?: { stream?: boolean; onTurnComplete?: (info: { session: import("../../types/index.js").Session; streamed: boolean; durationMs: number }) => void },
+  opts?: {
+    stream?: boolean;
+    onTurnComplete?: (info: { session: import("../../types/index.js").Session; streamed: boolean; durationMs: number }) => void;
+    permission?: import("../../workspace/types.js").PermissionLevel;
+  },
 ): Promise<void> {
   const view = new ReplChatView(ctx);
   const { runChat } = await import("./chat-controller.js");
-  await runChat(ctx, { view, stream: opts?.stream, onTurnComplete: opts?.onTurnComplete });
+  await runChat(ctx, { view, stream: opts?.stream, onTurnComplete: opts?.onTurnComplete, permission: opts?.permission });
   ctx.logger.info("Chat exited.");
   if (process.stdout.isTTY) {
     process.stdout.write(`${ctx.theme.dim}(chat closed)${ctx.theme.reset}\n`);
