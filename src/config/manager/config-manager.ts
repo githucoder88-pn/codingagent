@@ -1,27 +1,27 @@
 /**
  * CODER — configuration manager.
  *
- * Owns `~/.coder/config.json` and `~/.coder/providers.json`:
+ * Owns `~/.coder/config.json` and the encrypted provider-key vault
+ * (`~/.coder/vault.json`, see src/account/vault.ts):
  *   - load/validate/save config with zod,
  *   - merge environment overrides (CODER_PROVIDER, CODER_MODEL, …),
- *   - read/write provider API keys (0600 file permissions),
+ *   - read/write provider API keys (encrypted at rest, 0600 permissions),
  *   - atomic writes so a crash never corrupts the files.
  */
 
 import { ConfigError, AuthError } from "../../core/errors/index.js";
-import { paths, readJson, writeJson, atomicWriteFile } from "../../utils/paths.js";
-import { configSchema, providersSchema, type ConfigFile, type ProvidersFile } from "../schema/schema.js";
+import { paths, readJson, writeJson } from "../../utils/paths.js";
+import { configSchema, providersSchema, type ConfigFile } from "../schema/schema.js";
 import { CONFIG_DEFAULTS, ENV } from "../defaults/index.js";
 import { parseBoolEnv } from "../../utils/format.js";
 import { type AppSettings, type ProviderAccount } from "../../types/index.js";
+import { vault } from "../../account/vault.js";
 
 export class ConfigManager {
   private config: ConfigFile;
-  private providers: ProvidersFile;
 
   constructor() {
     this.config = this.loadConfig();
-    this.providers = this.loadProviders();
   }
 
   // ------------------------------------------------------------------ config
@@ -76,58 +76,42 @@ export class ConfigManager {
   }
 
   // --------------------------------------------------------------- providers
-
-  private loadProviders(): ProvidersFile {
-    const raw = readJson<unknown>(paths.providers());
-    if (raw === undefined) return {};
-    const parsed = providersSchema.safeParse(raw);
-    if (!parsed.success) {
-      throw new ConfigError(`Invalid providers file ${paths.providers()}: ${parsed.error.issues[0]?.message ?? "unknown error"}`);
-    }
-    return parsed.data;
-  }
-
-  private saveProviders(): void {
-    writeJson(paths.providers(), this.providers, { mode: 0o600 });
-  }
+  // Provider keys live in the encrypted vault (Phase 2). The legacy
+  // providers.json schema is kept only for backward-compatible reads of
+  // migrated files; nothing is written in plain text anymore.
 
   /** Save an API key (and optional base URL override) for a provider. */
   setApiKey(provider: string, apiKey: string, baseUrl?: string): void {
-    const account: ProviderAccount = {
+    vault().setAccount(provider, {
       apiKey,
       ...(baseUrl ? { baseUrl } : {}),
       configuredAt: new Date().toISOString(),
-    };
-    this.providers[provider] = account;
-    this.saveProviders();
+    });
   }
 
   getAccount(provider: string): ProviderAccount | undefined {
-    return this.providers[provider];
+    return vault().getAccount(provider);
   }
 
   getApiKey(provider: string): string {
-    const account = this.getAccount(provider);
+    const account = vault().getAccount(provider);
     if (!account) {
-      throw new AuthError(`No API key stored for provider "${provider}". Run: coder auth ${provider}`);
+      throw new AuthError(`No API key stored for provider "${provider}". Run: coder auth add ${provider}`);
     }
     return account.apiKey;
   }
 
   removeApiKey(provider: string): boolean {
-    if (!(provider in this.providers)) return false;
-    delete this.providers[provider];
-    this.saveProviders();
-    return true;
+    return vault().remove(provider);
   }
 
   listAccounts(): Array<{ provider: string; account: ProviderAccount }> {
-    return Object.entries(this.providers).map(([provider, account]) => ({ provider, account }));
+    return vault().list();
   }
 
-  /** Force-reload both files from disk (used after external edits in chat). */
+  /** Force-reload the config file from disk. */
   reload(): void {
     this.config = this.loadConfig();
-    this.providers = this.loadProviders();
   }
 }
+

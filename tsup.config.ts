@@ -3,28 +3,33 @@ import { defineConfig } from "tsup";
 /**
  * CODER build configuration.
  *
- * The CLI source is bundled into two self-contained ESM files
- * (`dist/cli.js` and `dist/index.js`). Runtime dependencies (commander,
- * zod, pino and the optional Ink/React UI) stay external: they are proper
- * npm packages installed alongside the CLI, and keeping them external
- * avoids CJS→ESM interop problems in the bundle.
+ * Three bundles from one build:
+ *   - dist/cli.js    — the CLI (bin: coder)
+ *   - dist/index.js  — programmatic API
+ *   - dist/server.js — the Phase 2 backend control plane
+ *
+ * Runtime dependencies stay external (proper npm packages installed with
+ * the CLI); the web dashboard is copied into dist/web (publicDir) and
+ * served by the backend.
  */
 export default defineConfig({
   entry: {
     cli: "src/cli.ts",
     index: "src/index.ts",
+    server: "backend/src/index.ts",
   },
   format: ["esm"],
   target: "node22",
   platform: "node",
   bundle: true,
-  external: ["commander", "pino", "zod", "ink", "react"],
+  external: ["commander", "pino", "zod", "ink", "react", "express"],
   treeshake: true,
   minify: false,
   sourcemap: false,
   clean: true,
   splitting: false,
   dts: false,
+  publicDir: "web",
   banner: {
     js: "#!/usr/bin/env node",
   },

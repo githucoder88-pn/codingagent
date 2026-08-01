@@ -103,5 +103,5 @@ export async function runAsk(ctx: AppContext, opts: AskOptions): Promise<AskResu
   ctx.memory.remember(session);
   ctx.logger.info(`ask complete: session=${session.id} streamed=${streamed} durationMs=${durationMs}`);
 
-  return { session, response, streamed };
+  return { session, response, streamed, durationMs };
 }

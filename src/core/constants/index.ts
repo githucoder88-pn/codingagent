@@ -7,8 +7,8 @@
 
 export const APP_NAME = "coder";
 export const APP_DISPLAY_NAME = "CODER";
-export const VERSION = "0.1.0";
-export const PHASE = "Phase 1 — Foundation Layer";
+export const VERSION = "0.2.0";
+export const PHASE = "Phase 2 — Data, Auth, and Control Plane";
 
 /** Default directory holding all user data: `~/.coder` (override with CODER_HOME). */
 export const DEFAULT_CONFIG_DIR_NAME = ".coder";
@@ -23,6 +23,13 @@ export const FILES = {
   cacheDb: "cache/coder.db",
   cacheJson: "cache/store.json",
   currentSession: "sessions/current.json",
+  // Phase 2 — account & data plane
+  session: "session.json",
+  settings: "settings.json",
+  records: "records.json",
+  vault: "vault.json",
+  keysDir: "keys",
+  serverDir: "server",
 } as const;
 
 /** Default `~/.coder/config.json` values (see also src/config/defaults). */

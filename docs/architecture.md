@@ -1,156 +1,160 @@
-# CODER — Architecture (Phase 1)
+# CODER — Architecture
 
-CODER is a TypeScript CLI for Node.js 22+. This document describes the module
-layout, the request flow, and the extension points that later phases build on.
+CODER is a TypeScript CLI + control plane for Node.js 22+. This document
+describes the module layout, the request flows, and the extension points
+that later phases build on.
 
 ## Directory layout
 
 ```
 coder/
-├── src/
-│   ├── commands/          # Commander command groups (one dir per group)
-│   │   ├── chat/          #   chat, ask, clear
-│   │   ├── auth/          #   auth <provider>, list, status, remove
-│   │   ├── models/        #   models, model use/current/list
-│   │   ├── provider/      #   provider list/current/use
-│   │   ├── config/        #   config show/get/set/path
-│   │   ├── sessions/      #   sessions list/show/remove/current
-│   │   ├── help/          #   extended help
-│   │   └── index.ts       #   program builder (wiring + exit codes)
-│   ├── core/
-│   │   ├── application/   #   AppContext, createApp(), shutdownApp()
-│   │   ├── container/     #   tiny DI container (lazy singletons)
-│   │   ├── lifecycle/     #   bootstrap() / shutdown()
-│   │   ├── constants/     #   paths, defaults, exit codes, env names
-│   │   └── errors/        #   CoderError hierarchy + exit-code mapping
-│   ├── config/
-│   │   ├── manager/       #   ConfigManager (config.json + providers.json)
-│   │   ├── schema/        #   zod schemas
-│   │   └── defaults/      #   defaults + themes list
-│   ├── providers/
-│   │   ├── base/          #   Provider interface + BaseProvider (HTTP/SSE)
-│   │   ├── openai/        #   OpenAI (also the template for OpenAI-compatible)
-│   │   ├── anthropic/     #   Anthropic Messages API
-│   │   ├── gemini/        #   Gemini Generative Language API
-│   │   ├── openrouter/    #   OpenRouter (extends OpenAI)
-│   │   ├── mock/          #   offline provider for tests/demos
-│   │   ├── registry.ts    #   provider registry + model caching
-│   │   ├── model-cache.ts #   SQLite-backed model catalogue cache
-│   │   ├── http-client.ts #   fetch wrapper (timeouts, error mapping)
-│   │   └── known-models.ts#   offline model metadata/fallback
-│   ├── session/
-│   │   ├── storage/       #   SessionStore (JSON files) + SqliteStore (kv/cache)
-│   │   ├── history/       #   current-session pointer
-│   │   └── memory/        #   in-process cache + message trimming
-│   ├── ui/
-│   │   ├── components/    #   banner, spinner, table, prompts
-│   │   ├── themes/        #   ANSI themes + NO_COLOR handling
-│   │   └── screens/       #   chat controller, REPL, Ink TUI, ask runner
-│   ├── logger/
-│   │   ├── console/       #   human console output
-│   │   └── file/          #   pino JSON → debug/error/latest.log (rotating)
-│   ├── utils/             #   paths, atomic writes, SSE parser, format
-│   ├── types/             #   shared domain types
-│   ├── cli.ts             #   entry point (argv → exit code)
-│   └── index.ts           #   public API
-├── tests/                 # unit/ integration/ e2e/ + helpers/
-├── docs/                  # this documentation set
-├── scripts/               # dev.mjs (tsx runner), smoke.mjs (exit-criteria)
+├── src/                          # Phase 1 + 2 CLI (bundled into dist/cli.js)
+│   ├── commands/                 #   Commander command groups
+│   │   ├── chat/  auth/  models/  provider/  config/  sessions/  help/
+│   │   ├── account/              #   login, signup, logout, delete-account
+│   │   ├── server/  dashboard/   #   backend lifecycle + web dashboard
+│   │   ├── settings/  privacy/   #   settings + privacy controls
+│   │   ├── feedback/  history/  export/  sync/
+│   │   ├── admin/                #   users/prompts/feedback/logs/training/usage/rotate-key
+│   │   └── index.ts              #   program builder (wiring + exit codes)
+│   ├── core/                     #   application, container, lifecycle, constants, errors
+│   ├── config/                   #   ConfigManager, zod schemas, defaults
+│   ├── providers/                #   base, openai, anthropic, gemini, openrouter, mock,
+│   │                             #   registry, model-cache, http-client, known-models
+│   ├── session/                  #   storage (JSON + SQLite), history, memory
+│   ├── account/                  #   Phase 2: session store, API client, encrypted
+│   │                             #   key vault, records store, privacy settings, recorder
+│   ├── sync/                     #   Phase 2: sync engine (records + keys → backend)
+│   ├── ui/                       #   components, themes, screens (Ink TUI + REPL)
+│   ├── logger/                   #   console + rotating pino file sinks
+│   ├── utils/  types/  cli.ts  index.ts
+├── backend/                      # Phase 2 control plane (bundled into dist/server.js)
+│   ├── src/api/                  #   Express routers: auth, users, chat, admin, data
+│   ├── src/auth/                 #   scrypt, JWT sessions, Firebase verification, middleware
+│   ├── src/database/             #   node:sqlite schema + repositories
+│   ├── src/encryption/           #   KeyManager: AES-256-GCM envelopes + rotation
+│   ├── src/providers/            #   server-side chat proxy (decrypt → call → discard)
+│   ├── src/config.ts  server.ts  #   env config + Express composition
+│   └── src/index.ts              #   entry (node dist/server.js)
+├── shared/                       # Phase 2 shared library (no build step)
+│   └── src/                      #   types, zod schemas, crypto primitives, constants
+├── web/                          # Phase 2 dashboard SPA (copied into dist/ at build)
+│   ├── index.html  app.js  styles.css
+├── tests/                        # unit/ integration/ e2e/ phase2/ + helpers/
+├── docs/                         # this documentation set
+├── scripts/                      # dev.mjs, smoke.mjs (Phase 1), smoke-phase2.mjs
 └── package.json
 ```
 
-## Request flow
+## Request flows
+
+### CLI chat (unchanged from Phase 1)
 
 ```
-┌────────┐   argv    ┌──────────┐   parse   ┌──────────────┐
-│  coder │ ────────▶ │  cli.ts  │ ────────▶ │  Commander   │
-└────────┘           └──────────┘           └──────┬───────┘
-                                                    │ action
-                                                    ▼
-                                           ┌──────────────────┐
-                                           │  bootstrap()     │  ensure ~/.coder
-                                           │  createApp()     │  load config
-                                           └────────┬─────────┘  open SQLite
-                                                    │              init providers
-                                                    ▼
-                                          ┌───────────────────┐
-                                          │  command handler  │  e.g. askCommand
-                                          └─────────┬─────────┘
-                                                    ▼
-                        ┌──────────────────────────────────────────┐
-                        │ runAsk: history → session → trim (memory)│
-                        │        → registry → provider.chat/stream │
-                        │        → save session → print result     │
-                        └──────────────────────────────────────────┘
-                                                    │
-                                                    ▼
-                                          shutdownApp(): close SQLite,
-                                          flush + close loggers, exit code
+coder ask "…" → commander → bootstrap() → registry → provider.chat/stream
+                                      → session store → recordTurn (Phase 2)
+```
+
+### Account + recording
+
+```
+coder login ──▶ POST /api/auth/login ──▶ session.json (0600)
+
+coder ask "…" ──▶ provider call (local key from encrypted vault)
+              ──▶ recordTurn: append ~/.coder/records.json (privacy-gated)
+              ──▶ syncRecords: POST /api/chat/prompt {clientRecordId, …}
+                              (idempotent; retried by `coder sync` when offline)
+```
+
+### Backend request flow
+
+```
+express ──▶ authMiddleware (Bearer → JWT → api_sessions check)
+   ├── /api/auth/*        signup/login/logout/session/keys/firebase
+   ├── /api/users/*       me, settings, stats
+   ├── /api/chat/*        prompt (idempotent, privacy-gated), history,
+   │                      feedback, completions (server-side proxy:
+   │                      fetch encrypted key → KeyManager.decrypt →
+   │                      provider call → plaintext discarded)
+   ├── /api/admin/*       users, prompts, feedback, logs, training,
+   │                      usage, rotate-key (superadmin)
+   ├── /api/export, /api/delete-account
+   └── / (web dashboard SPA)
 ```
 
 ## Key design decisions
 
-1. **Provider contract is the extension point.** A provider implements
-   `Provider` (initialize / authenticate / listModels / chat / stream),
-   registers itself in `buildContainer()`, and every command works with it.
-   The `mock` provider is a working example of a 100 % offline provider.
+1. **Provider contract is the extension point.** `Provider` (initialize /
+   authenticate / listModels / chat / stream) is implemented by every
+   provider; the registry exposes it to all commands. The `mock` provider is
+   a fully offline example.
 
-2. **Dependency injection via a tiny container.** Services are lazy
-   singletons; tests re-register tokens (`container.override`) to substitute
-   doubles. No framework needed.
+2. **Dependency injection via a tiny container.** Lazy singletons; tests
+   re-register tokens to substitute doubles.
 
-3. **Neutral types at the edges.** `ChatMessage`, `ChatRequest`,
-   `ChatResponse`, `Model` are provider-agnostic. Each provider translates to
-   its wire format in one place (`buildChatPayload`, `parseChatResponse`,
-   `parseStreamData`, `parseModels`), which keeps the rest of the app
-   provider-ignorant.
+3. **Neutral types at the edges.** `ChatMessage` / `ChatRequest` /
+   `ChatResponse` / `Model` are provider-agnostic; wire translation lives in
+   each provider.
 
-4. **Stability-first error handling.** Every failure is a `CoderError`
-   subclass with a stable exit code (see `core/constants`): `0` ok, `2` usage,
-   `3` auth, `4` network, `5` provider, `6` config. Scripts can rely on them.
+4. **Stability-first errors.** Every failure is a `CoderError` with a stable
+   exit code: `0` ok · `2` usage · `3` auth · `4` network · `5` provider ·
+   `6` config.
 
-5. **SQLite without native modules.** Node's built-in `node:sqlite` powers
-   the cache/metadata store; if it is unavailable the store degrades to a
-   JSON file so the CLI never breaks on exotic platforms.
+5. **Secrets are encrypted by default.** AES-256-GCM envelopes everywhere
+   (CLI vault + backend), versioned for rotation, master keys never in the
+   database. See [Security model](security.md).
 
-6. **UI degrades gracefully.** The interactive chat uses Ink on real
-   terminals and a readline REPL everywhere else (pipes, CI, minimal
-   terminals). All output is colour-safe (NO_COLOR / non-TTY aware).
+6. **Offline-first with eventual sync.** The CLI works fully offline;
+   records and keys sync idempotently when the backend is reachable, and
+   `coder sync` retries anything queued.
+
+7. **Privacy is enforced server-side, not just client-side.** The backend
+   refuses to record prompts when history is disabled and only marks rows
+   for training after explicit opt-in.
+
+8. **UI degrades gracefully.** Ink TUI on real terminals, readline REPL
+   everywhere else; the dashboard is a dependency-free SPA served by the
+   backend.
 
 ## Storage layout
 
 ```
 ~/.coder/
-├── config.json            # provider/model/theme/stream (zod-validated)
-├── providers.json         # API keys + base URL overrides (0600)
-├── sessions/
-│   ├── current.json       # pointer to the active session
-│   └── session-001.json   # one JSON file per conversation
-├── logs/
-│   ├── debug.log          # pino JSON, everything
-│   ├── error.log          # errors only
-│   └── latest.log         # most recent invocation (truncated per run)
-└── cache/
-    └── coder.db           # SQLite: kv metadata + model catalogue cache
+├── config.json              # provider/model/theme/stream (Phase 1)
+├── vault.json               # provider keys, AES-256-GCM (Phase 2)
+├── keys/master.key          # local vault master key (0600)
+├── session.json             # signed-in session (0600)
+├── settings.json            # privacy settings (0600)
+├── records.json             # local prompt/response/feedback log (0600)
+├── sessions/                # Phase 1 conversation files
+├── logs/                    # pino JSON logs (debug/error/latest)
+├── cache/                   # SQLite cache (model catalogues, kv)
+└── server/                  # backend: coder.db, master.key, jwt.secret,
+                             # keys.json (rotation), server.log, server.pid
 ```
 
-`CODER_HOME` relocates `~/.coder` (used by tests and portable installs).
+`CODER_HOME` relocates everything; `CODER_SERVER_DIR` relocates the backend.
 
 ## Testing strategy
 
-- **Unit** (`tests/unit`) — containers, config, session store, SSE parser,
-  provider wire-format translations, memory trimming, formatting.
-- **Integration** (`tests/integration`) — providers against an in-memory
-  fake `fetch` (URLs, headers, payloads, streaming, error mapping), model
-  cache behaviour, full `createApp → runAsk → persist` flows.
-- **E2E** (`tests/e2e`) — spawns the built `dist/cli.js` in an isolated
-  `CODER_HOME` and walks the Phase 1 exit-criteria flow with the mock
-  provider.
+- **Unit** — crypto primitives, KeyManager rotation, Firebase verification,
+  container, config, session store, SSE parser, provider wire formats,
+  memory, formatting.
+- **Integration** — the full backend API on an ephemeral port (auth, keys,
+  recording, privacy, feedback, admin, rotation, export, deletion, proxy),
+  the CLI in-process against a live backend (signup → login → auth add →
+  privacy → ask → feedback → history → export → admin → delete-account),
+  providers against a fake fetch.
+- **E2E** — spawned `dist/cli.js` + `dist/server.js`: the Phase 2 exit
+  example, server lifecycle (`start/status/stop`), dashboard, and the Phase
+  1 exit criteria.
 
-## Phase 2 hooks
+## Phase 3 hooks
 
-- `MessageRole` already includes `"tool"`; `Model.supportsTools` is tracked.
-- `session/memory` can grow into a context-management layer.
-- `SqliteStore.message_log` is a ready-made index for repository analysis.
-- The registry pattern lets Phase 2 add `Agent`/`Tool` services the same way
-  providers are added today.
+- `MessageRole.tool` + `Model.supportsTools` — tool-calling and agent loops.
+- The sync engine becomes the transport for session sync and multi-device
+  state.
+- `training_consent` + `for_training` rows — the opt-in training pipeline.
+- The server-side proxy is the seed of server-side orchestration and
+  multi-agent routing.
+- `shared/` types are the contract for skills packs, MCPs and plugins.

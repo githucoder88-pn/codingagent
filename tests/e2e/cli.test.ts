@@ -51,13 +51,13 @@ describe("coder CLI (e2e)", () => {
   it("prints the version", async () => {
     const res = await run(["--version"], env());
     expect(res.code).toBe(0);
-    expect(res.stdout.trim()).toBe("0.1.0");
+    expect(res.stdout.trim()).toBe("0.2.0");
   });
 
   it("shows extended help with all command groups", async () => {
     const res = await run(["help"], env());
     expect(res.code).toBe(0);
-    for (const cmd of ["chat", "ask", "auth", "models", "model use", "provider use", "sessions", "clear", "config show"]) {
+    for (const cmd of ["chat", "ask", "auth add", "models", "model use", "provider list", "sessions", "clear", "config show", "login", "dashboard"]) {
       expect(res.stdout).toContain(cmd);
     }
   });

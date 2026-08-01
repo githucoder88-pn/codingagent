@@ -2,64 +2,72 @@
 
 **A lightweight, extensible, globally installed AI coding assistant.**
 
-**Version 0.1.0 — Phase 1 (Foundation Layer)**
+**Version 0.2.0 — Phase 2 (Data, Auth, and Control Plane)**
 
 CODER is a command-line AI assistant that talks to OpenAI, Anthropic, Gemini
-and OpenRouter from your terminal. Phase 1 lays the foundation: global
-installation, provider authentication, model selection, interactive + one-shot
-chat with streaming, and persistent conversation history.
+and OpenRouter from your terminal — and now it is also a **platform**: secure
+accounts, encrypted key storage, an owned backend + database, prompt /
+response / feedback recording, opt-in training data, admin tooling and a web
+dashboard.
 
 ```console
 $ npm install -g coder
 
-$ coder auth openrouter
-Enter API key for OpenRouter (input hidden): ████████████████
-✓ API key for OpenRouter stored and verified.
-
-$ coder models
-MODEL                          PROVIDER    CONTEXT  TOOLS
-anthropic/claude-sonnet-4      openrouter  200000   yes
-openai/gpt-5                   openrouter  400000   yes
-…
-
-$ coder model use anthropic/claude-sonnet-4
-✓ Active model set to anthropic/claude-sonnet-4 (OpenRouter).
-
+$ coder signup                      # create your account
+$ coder login
+$ coder auth add openrouter         # key encrypted locally + on the backend
+$ coder settings privacy on         # explicit privacy control
 $ coder ask "Build a Todo application."
-Here is a Todo application…
+$ coder feedback 5 "Worked well"
+$ coder dashboard                   # web control center
 ```
 
-## Features (Phase 1)
+## Phase 1 (foundation) still works exactly as before
+
+```console
+$ coder auth add openai --key sk-...
+$ coder models
+$ coder model use anthropic/claude-sonnet-4
+$ coder ask "Build a Todo application."
+$ coder chat                        # Ink TUI / REPL, streaming
+```
+
+All Phase 1 behavior (providers, sessions, config, themes, logging, offline
+mock provider) is unchanged. Phase 2 layers accounts and a control plane on
+top — you can use CODER fully offline without an account.
+
+## What Phase 2 adds
 
 | Area | What you get |
 | --- | --- |
-| **Providers** | OpenAI (GPT + O-series), Anthropic (Claude), Gemini, OpenRouter, plus a built-in offline `mock` provider for demos/tests |
-| **Auth** | `coder auth <provider>` with hidden input or `--key` for scripts; keys stored in `~/.coder/providers.json` (0600) |
-| **Chat** | `coder chat` (interactive, streaming, slash commands), `coder ask "…"` (one-shot, JSON output available) |
-| **Models** | `coder models`, `coder model use <id>`, `coder model current` — cached 24 h in SQLite, offline fallback catalogue |
-| **Sessions** | Every conversation saved automatically to `~/.coder/sessions/session-NNN.json`; `coder sessions list/show/remove`, `coder clear` |
-| **Config** | `~/.coder/config.json` + environment overrides (`CODER_PROVIDER`, `CODER_MODEL`, `CODER_STREAM`, `CODER_THEME`, `CODER_HOME`) |
-| **Logging** | `~/.coder/logs/{debug,error,latest}.log` (pino JSON, rotating) |
-| **UI** | Ink-based TUI on real terminals, readline REPL everywhere else, themes (`default`, `dark`, `light`, `none`) |
+| **Accounts** | `coder signup` / `coder login` / `coder logout` / `coder delete-account`; sessions in `~/.coder/session.json` (0600) |
+| **Encrypted keys** | Provider keys encrypted with AES-256-GCM in the local vault **and** on the backend (master keys never in the DB) |
+| **Backend** | `coder server start` — SQLite control plane at `127.0.0.1:8747` (users, keys, prompts, responses, feedback, audit logs, training consent, usage) |
+| **Recording** | Every ask/chat turn is stored locally and synced (idempotent, offline-tolerant) when signed in |
+| **Feedback** | `coder feedback 1-5 "comment"` — attaches to the last response, synced to the backend |
+| **Privacy** | `coder settings privacy on\|off`, `coder privacy history\|training on\|off` — history recording and training opt-in are explicit, configurable, revocable |
+| **History** | `coder history` (local) and `coder history --remote` (backend) |
+| **Export / erasure** | `coder export` (JSON bundle, keys only as fingerprints) and `coder delete-account` (cascade erase) |
+| **Dashboard** | `coder dashboard` opens the web UI: history, keys, settings, feedback, export; admin views for users / prompts / feedback / logs / training / usage |
+| **Admin** | `coder admin users\|prompts\|feedback\|logs\|training\|usage\|rotate-key\|sync` (admin role required) |
+| **Auth options** | Email/password (scrypt) plus optional Firebase Auth (RS256 ID-token verification) |
+| **Key rotation** | `coder admin rotate-key` — versioned envelopes, archived keys, re-encrypts everything (superadmin) |
 
-## Quick start
+## Quick start (Phase 2)
 
 ```console
-npm install -g coder        # global executable: coder
-
-coder auth openrouter       # or: openai | anthropic | gemini
-coder models                # list models for the active provider
-coder model use anthropic/claude-sonnet-4
+coder server start                 # start the control plane (auto-starts with `coder dashboard`)
+coder signup --email you@example.com --password ...
+coder login
+coder auth add openrouter          # encrypted locally + on the backend
+coder settings privacy on          # or: coder privacy training on (opt-in)
 coder ask "Build a Todo application."
-coder chat                  # interactive session
-```
-
-No API key handy? Every command works offline against the built-in mock
-provider:
-
-```console
-coder provider use mock
-coder ask "hello"
+coder feedback 5 "Worked well"
+coder history --remote             # see it in the backend
+coder dashboard                    # open the web dashboard
+coder admin users                  # (admin accounts only)
+coder export                       # your data, JSON
+coder delete-account --yes         # permanent erasure
 ```
 
 ## Commands
@@ -67,39 +75,54 @@ coder ask "hello"
 ```
 coder chat                          Interactive chat (Ink TUI / REPL)
 coder ask <prompt…>                 One-shot prompt (continues current session)
-coder auth <provider>               Store an API key  (--key, --base-url)
-coder auth list | status | remove <provider>
+coder signup | login | logout       Account management
+coder auth add <provider>           Store an API key (encrypted, synced)
+coder auth list | status | remove
 coder models [--provider <id>] [--refresh]
 coder model use <model-id> | current | list
 coder provider list | current | use <provider-id>
+coder settings [show|set|privacy|history|training]
+coder privacy [status|history|training]
+coder feedback <1-5> [comment]
+coder history [--remote] [--limit N] [--json]
+coder sync                          Push local records + keys to the backend
+coder export [--out file] [--local-only]
+coder dashboard [--port N] [--no-open]
+coder server start | status | stop
+coder admin <users|prompts|feedback|logs|training|usage|rotate-key|sync>
 coder sessions list | current | show <id> | remove <id>
 coder clear                         Reset the current session's messages
 coder config show | get <key> | set <key> <value> | path
-coder help                          Extended help
+coder delete-account [--yes]
+coder help
 ```
 
 ## Requirements
 
-- Node.js **22.13+** (uses the built-in `node:sqlite`; no native modules)
-- An API key for at least one provider
+- Node.js **22.13+** (uses built-in `node:sqlite` and `node:crypto`; no
+  native modules)
+- An API key for at least one provider (or the offline `mock` provider)
 
 ## Development
 
 ```console
 npm install
 npm run dev -- ask "hello"          # run from source (tsx)
-npm run typecheck                   # tsc --noEmit
-npm test                            # unit + integration + e2e (builds first)
-npm run smoke                       # build + exit-criteria smoke test
-npm run build                       # bundle to dist/ (tsup)
+npm run typecheck
+npm test                            # 168 unit + integration + e2e tests
+npm run smoke                       # Phase 1 exit criteria
+npm run smoke:phase2                # Phase 2 exit example
+npm run build                       # dist/cli.js + dist/server.js + dist/web
 ```
 
 ## Documentation
 
 - [Architecture](docs/architecture.md) — modules, flow, extension points
 - [Getting started](docs/getting-started.md) — install, auth, chat
-- [Providers](docs/providers.md) — wire formats, auth, adding a provider
+- [Providers](docs/providers.md) — wire formats, adding a provider
 - [Configuration](docs/configuration.md) — config file, env vars, sessions, logging
+- [Security model](docs/security.md) — encryption, hashing, auth, privacy, training policy
+- [Backend API](docs/backend-api.md) — full control-plane API reference
 
 ## License
 

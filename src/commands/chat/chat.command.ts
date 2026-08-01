@@ -17,7 +17,26 @@ export async function chatCommand(ctx: AppContext, opts: ChatCommandOptions = {}
       `Provider "${provider.id}" is not configured. Run \`coder auth ${provider.id}\` first.`,
     );
   }
-  await runChatScreen(ctx, opts);
+  await runChatScreen(ctx, {
+    ...opts,
+    onTurnComplete: (info) => {
+      // Phase 2: record each completed turn (privacy-gated, best-effort).
+      void (async () => {
+        const lastUser = [...info.session.messages].reverse().find((m) => m.role === "user");
+        const lastAssistant = [...info.session.messages].reverse().find((m) => m.role === "assistant");
+        if (!lastUser) return;
+        const { recordTurn } = await import("../../account/recorder.js");
+        await recordTurn(ctx, {
+          sessionId: info.session.id,
+          provider: info.session.provider,
+          model: info.session.model,
+          prompt: lastUser.content,
+          response: lastAssistant?.content ?? "",
+          latencyMs: info.durationMs,
+        });
+      })();
+    },
+  });
   return 0;
 }
 
@@ -54,6 +73,20 @@ export async function askCommand(ctx: AppContext, opts: AskCommandOptions): Prom
 
   const result = await runAsk(ctx, askOpts);
 
+  // Phase 2: record the turn (privacy-gated) and sync to the backend.
+  let recordId: string | undefined;
+  const { recordTurn } = await import("../../account/recorder.js");
+  const recorded = await recordTurn(ctx, {
+    sessionId: result.session.id,
+    provider: providerId,
+    model,
+    prompt: opts.prompt,
+    response: result.response.content,
+    tokensUsed: result.response.usage.outputTokens,
+    latencyMs: result.durationMs,
+  });
+  if (recorded.recorded) recordId = recorded.recordId;
+
   if (opts.json) {
     process.stdout.write(
       `${JSON.stringify(
@@ -65,6 +98,9 @@ export async function askCommand(ctx: AppContext, opts: AskCommandOptions): Prom
           usage: result.response.usage,
           streamed: result.streamed,
           createdAt: result.response.createdAt,
+          durationMs: result.durationMs,
+          recordId,
+          recorded: recordId !== undefined,
         },
         null,
         2,

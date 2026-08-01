@@ -20,7 +20,7 @@ You will be prompted for an API key (input is hidden). To authenticate
 non-interactively (scripts, CI):
 
 ```console
-coder auth openai --key sk-...
+coder auth add openai --key sk-...
 coder auth anthropic --key sk-ant-...
 coder auth gemini --key AIza...
 coder auth openrouter --key sk-or-...
@@ -39,7 +39,7 @@ Advanced: point a provider at a custom endpoint (proxies, self-hosted
 gateways):
 
 ```console
-coder auth openai --key sk-... --base-url https://my-proxy.example.com/v1
+coder auth add openai --key sk-... --base-url https://my-proxy.example.com/v1
 ```
 
 ## 3. Pick a provider and model
@@ -120,7 +120,37 @@ coder ask "hello"
 
 Useful for demos, CI and development.
 
-## 7. Troubleshooting
+## 7. Accounts & the control plane (Phase 2)
+
+CODER v0.2 adds a local control plane for accounts, encrypted keys,
+recording, feedback and the web dashboard:
+
+```console
+coder server start                 # start the backend (auto-starts with `coder dashboard`)
+coder signup --email you@example.com --password ...
+coder login
+coder auth add openrouter          # encrypted locally AND on the backend
+coder settings privacy on          # explicit privacy control
+coder ask "Build a Todo application."
+coder feedback 5 "Worked well"     # attach a rating to the last response
+coder history --remote             # backend history
+coder dashboard                    # web dashboard
+coder export                       # your data as JSON
+coder delete-account --yes         # permanent erasure
+```
+
+Privacy settings: `coder settings privacy on|off` (master switch),
+`coder settings history on|off`, `coder settings training on|off`.
+Training data is **never** collected without explicit opt-in.
+
+Admin (requires an admin account): `coder admin users`, `coder admin
+prompts`, `coder admin feedback`, `coder admin logs`, `coder admin
+training`, `coder admin usage`, `coder admin rotate-key` (superadmin).
+
+See [Security model](security.md) and [Backend API](backend-api.md) for
+details.
+
+## 8. Troubleshooting
 
 | Problem | Fix |
 | --- | --- |

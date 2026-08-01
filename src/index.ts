@@ -32,6 +32,21 @@ export { VERSION, APP_NAME, APP_DISPLAY_NAME, EXIT } from "./core/constants/inde
 export { runCli, main } from "./cli.js";
 export { buildProgram } from "./commands/index.js";
 
+// Phase 2 — account & sync
+export { ApiClient, resolveServerUrl, defaultServerUrl } from "./account/api-client.js";
+export { loadSession, saveSession, clearSession, requireSession } from "./account/session-store.js";
+export { loadSettings, saveSettings, setPrivacyProfile } from "./account/settings.js";
+export { loadRecords, appendRecord, updateRecord, latestRecord } from "./account/records.js";
+export { vault } from "./account/vault.js";
+export { recordTurn } from "./account/recorder.js";
+export { syncRecords, syncProviderKey } from "./sync/sync.js";
+
+// Phase 2 — backend (control plane)
+export { createServer as createBackendServer, webRoot } from "../backend/src/server.js";
+export { loadConfig as loadBackendConfig } from "../backend/src/config.js";
+export { KeyManager } from "../backend/src/encryption/key-manager.js";
+export { verifyFirebaseToken } from "../backend/src/auth/auth.js";
+
 // Configuration
 export { ConfigManager } from "./config/manager/config-manager.js";
 export { configSchema, providersSchema } from "./config/schema/schema.js";

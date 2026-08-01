@@ -51,11 +51,15 @@ export interface Model {
   description?: string;
 }
 
-/** Stored credentials for one provider (kept in ~/.coder/providers.json). */
+/** Stored credentials for one provider (kept in the encrypted vault). */
 export interface ProviderAccount {
   apiKey: string;
   baseUrl?: string;
   configuredAt: string;
+  /** Backend fingerprint (first 16 hex chars of sha256) when synced. */
+  remoteFingerprint?: string;
+  /** When the key was last uploaded to the backend. */
+  syncedAt?: string;
 }
 
 /** A conversation stored on disk (see ~/.coder/sessions/session-*.json). */
@@ -81,6 +85,7 @@ export interface AskResult {
   session: Session;
   response: ChatResponse;
   streamed: boolean;
+  durationMs: number;
 }
 
 /** Kinds of events emitted by the interactive chat screen. */

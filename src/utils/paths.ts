@@ -32,6 +32,13 @@ export const paths = {
   cacheDb: () => join(coderHome(), FILES.cacheDb),
   cacheJson: () => join(coderHome(), FILES.cacheJson),
   logFile: (name: string) => join(coderHome(), FILES.logsDir, name),
+  // Phase 2 — account & data plane
+  session: () => join(coderHome(), FILES.session),
+  settings: () => join(coderHome(), FILES.settings),
+  records: () => join(coderHome(), FILES.records),
+  vault: () => join(coderHome(), FILES.vault),
+  keysDir: () => join(coderHome(), FILES.keysDir),
+  serverDir: () => join(coderHome(), FILES.serverDir),
 };
 
 /** Create the full `~/.coder` layout. Idempotent. */

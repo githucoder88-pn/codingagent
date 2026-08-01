@@ -1,7 +1,7 @@
 {
   "name": "coder",
-  "version": "0.1.0",
-  "description": "CODER — a lightweight, extensible, globally installed AI coding assistant (Phase 1: Foundation Layer).",
+  "version": "0.2.0",
+  "description": "CODER — a lightweight, extensible, globally installed AI coding assistant (Phase 2: Data, Auth, and Control Plane).",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -30,8 +30,10 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
+    "test:phase2": "vitest run tests/phase2",
     "test:e2e": "npm run build && vitest run tests/e2e",
     "smoke": "node scripts/smoke.mjs",
+    "smoke:phase2": "node scripts/smoke-phase2.mjs",
     "prepublishOnly": "npm run typecheck && npm run build && npm test"
   },
   "keywords": [
@@ -46,6 +48,7 @@
   ],
   "dependencies": {
     "commander": "^12.1.0",
+    "express": "^5.2.1",
     "pino": "^9.5.0",
     "zod": "^3.24.1"
   },
@@ -54,6 +57,7 @@
     "react": "^18.3.1"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.31",
     "react-devtools-core": "^4.28.5",
