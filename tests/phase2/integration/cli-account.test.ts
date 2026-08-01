@@ -321,6 +321,91 @@ describe("admin via CLI", () => {
   });
 });
 
+describe("settings pull + chat recording", () => {
+  it("login pulls the account's server-side privacy settings", async () => {
+    // Sign up via API and change settings on the server (as the dashboard
+    // would), then verify the CLI picks them up on login.
+    const signupResult = await api(backend!, "/auth/signup", {
+      method: "POST",
+      body: { email: "pull@example.com", password: "password123" },
+    });
+    const token = signupResult.body.token as string;
+    await api(backend!, "/users/me/settings", {
+      method: "PATCH",
+      token,
+      body: { historyEnabled: false, trainingOptIn: true },
+    });
+
+    const code = await cli(["login", "--email", "pull@example.com", "--password", "password123"]);
+    expect(code).toBe(0);
+    expect(loadSettings()).toEqual({ historyEnabled: false, trainingOptIn: true });
+  });
+
+  it("chat turns are recorded and synced (onTurnComplete hook)", async () => {
+    await cli(["signup", "--email", "chatrec@example.com", "--password", "password123"]);
+    await cli(["provider", "use", "mock"]);
+
+    // Drive the ChatController directly with a stub view (the CLI's chat
+    // command wires the same onTurnComplete recording hook).
+    const { ChatController } = await import("../../../src/ui/screens/chat-controller.js");
+    type ChatView = import("../../../src/ui/screens/chat-controller.js").ChatView;
+    const { createApp } = await import("../../../src/core/application/application.js");
+    const ctx = await createApp();
+
+    const lines: string[] = [];
+    const view: ChatView = {
+      print: (t) => lines.push(t),
+      status: () => {},
+      statusDone: () => {},
+      delta: () => {},
+      error: () => {},
+      banner: () => {},
+      close: () => {},
+      input: async () => "Hello chat turn",
+    };
+    const completions: Array<{ streamed: boolean; durationMs: number }> = [];
+    const controller = new ChatController(ctx, {
+      stream: false,
+      onTurnComplete: (info) => {
+        completions.push({ streamed: info.streamed, durationMs: info.durationMs });
+        void (async () => {
+          const { recordTurn } = await import("../../../src/account/recorder.js");
+          const lastUser = [...info.session.messages].reverse().find((m) => m.role === "user");
+          const lastAssistant = [...info.session.messages].reverse().find((m) => m.role === "assistant");
+          await recordTurn(ctx, {
+            sessionId: info.session.id,
+            provider: info.session.provider,
+            model: info.session.model,
+            prompt: lastUser?.content ?? "",
+            response: lastAssistant?.content ?? "",
+            latencyMs: info.durationMs,
+          });
+        })();
+      },
+    });
+    // One turn, then EOF.
+    let calls = 0;
+    view.input = async () => {
+      calls += 1;
+      return calls === 1 ? "Hello chat turn" : null;
+    };
+    await controller.run(view);
+    await new Promise((r) => setTimeout(r, 100)); // let the async hook finish
+
+    expect(completions).toHaveLength(1);
+    const records = loadRecords();
+    expect(records).toHaveLength(1);
+    expect(records[0]?.prompt).toBe("Hello chat turn");
+    expect(records[0]?.response?.length).toBeGreaterThan(0);
+    expect(records[0]?.syncedAt).toBeTruthy(); // synced to the backend
+
+    const { token } = JSON.parse(readFileSync(`${process.env.CODER_HOME}/session.json`, "utf8")) as { token: string };
+    expect((await api(backend!, "/chat/history", { token })).body.total).toBe(1);
+    await ctx.container.disposeAll();
+    ctx.logger.close();
+  });
+});
+
 describe("delete-account via CLI", () => {
   it("removes the account on the backend and clears local data", async () => {
     await cli(["signup", "--email", "bye@example.com", "--password", "password123"]);

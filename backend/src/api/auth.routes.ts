@@ -3,7 +3,7 @@
  */
 
 import { Router } from "express";
-import { fingerprint, randomId } from "../../../shared/src/index.js";
+import { fingerprint } from "../../../shared/src/index.js";
 import { providerKeySchema, loginSchema, signupSchema } from "../../../shared/src/index.js";
 import { Database } from "../database/db.js";
 import {
@@ -177,5 +177,3 @@ export function authRouter(deps: AuthRouterDeps): Router {
 
   return router;
 }
-
-export { getProviderKeyRow, randomId };

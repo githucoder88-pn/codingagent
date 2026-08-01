@@ -97,6 +97,15 @@ CREATE TABLE IF NOT EXISTS training_consent (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS model_metadata (
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  first_seen_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  usage_count INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (provider, model)
+);
+
 CREATE INDEX IF NOT EXISTS idx_prompts_user ON prompts(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_prompts_training ON prompts(for_training, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_responses_prompt ON responses(prompt_id);

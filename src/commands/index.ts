@@ -38,6 +38,7 @@ import {
   adminLogsCommand,
   adminTrainingCommand,
   adminUsageCommand,
+  adminModelsCommand,
   adminRotateKeyCommand,
   type AdminListOptions,
 } from "./admin/admin.command.js";
@@ -513,6 +514,14 @@ export function buildProgram(createCtx?: (opts: GlobalOptions) => Promise<AppCon
     .option("--days <n>", "window in days")
     .option("--json", "raw JSON output")
     .action(wrap(async (ctx, opts: AdminListOptions) => adminUsageCommand(ctx, adminOpts(opts))));
+
+  admin
+    .command("models")
+    .description("Show provider/model metadata (from recorded prompts)")
+    .option("--limit <n>", "max entries")
+    .option("--search <provider>", "filter by provider")
+    .option("--json", "raw JSON output")
+    .action(wrap(async (ctx, opts: AdminListOptions) => adminModelsCommand(ctx, adminOpts(opts))));
 
   admin
     .command("rotate-key")

@@ -13,6 +13,7 @@ import {
   adminPrompts,
   listAuditLogs,
   listFeedback,
+  listModelMetadata,
   listUsers,
   trainingDataset,
   trainingStats,
@@ -101,6 +102,22 @@ export function adminRouter(deps: AdminRouterDeps): Router {
       const rows = trainingDataset(db, { limit: parsed.data.limit, offset: parsed.data.offset });
       writeAudit(db, { actorId: req.auth!.userId, action: "admin.training.dataset", targetType: "training" });
       res.json({ rows, stats: trainingStats(db) });
+    }),
+  );
+
+  // GET /api/admin/models — provider/model metadata seen in recorded prompts
+  router.get(
+    "/models",
+    asyncHandler(async (req: AuthedRequest, res) => {
+      const parsed = adminQuerySchema.safeParse(req.query);
+      if (!parsed.success) throw badRequest("validation_error", parsed.error.issues[0]?.message ?? "invalid query");
+      res.json({
+        models: listModelMetadata(db, {
+          limit: parsed.data.limit,
+          offset: parsed.data.offset,
+          provider: parsed.data.search,
+        }),
+      });
     }),
   );
 

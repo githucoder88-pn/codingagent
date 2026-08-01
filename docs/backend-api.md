@@ -64,6 +64,7 @@ provider · `6` config.
 | GET | `/api/admin/training` | Opt-in / dataset counts |
 | GET | `/api/admin/training/dataset?limit&offset` | Training rows (opted-in users only) |
 | GET | `/api/admin/usage?days` | Prompts/day, by provider, by model, latency, tokens |
+| GET | `/api/admin/models?search=<provider>` | Provider/model metadata (usage counts, first/last seen) |
 | POST | `/api/admin/rotate-key` | Rotate master key + re-encrypt all keys (superadmin) |
 
 ## Data ownership

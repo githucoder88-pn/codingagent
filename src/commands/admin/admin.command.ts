@@ -156,6 +156,29 @@ export async function adminUsageCommand(ctx: AppContext, opts: AdminListOptions)
   return 0;
 }
 
+export async function adminModelsCommand(ctx: AppContext, opts: AdminListOptions): Promise<number> {
+  const { theme } = ctx;
+  const result = await adminClient().get<{ models: Array<Record<string, unknown>> }>(
+    `/admin/models?limit=${opts.limit}&offset=${opts.offset}${opts.search ? `&search=${encodeURIComponent(opts.search)}` : ""}`,
+  );
+  if (opts.json) {
+    printJson(result.body);
+    return 0;
+  }
+  const rows = result.body.models.map((m) => [
+    String(m.provider),
+    String(m.model),
+    String(m.usageCount),
+    String(m.lastSeenAt).slice(0, 19).replace("T", " "),
+  ]);
+  if (rows.length === 0) {
+    process.stdout.write(`${theme.dim}No model metadata yet (no prompts recorded).${theme.reset}\n`);
+    return 0;
+  }
+  process.stdout.write(`${renderTable(["PROVIDER", "MODEL", "USES", "LAST SEEN"], rows)}\n`);
+  return 0;
+}
+
 export async function adminRotateKeyCommand(ctx: AppContext, opts: { yes?: boolean }): Promise<number> {
   const { theme } = ctx;
   if (!opts.yes) {

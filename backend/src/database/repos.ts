@@ -276,6 +276,16 @@ export function insertPrompt(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(id, input.userId, input.sessionId, input.provider, input.model, input.prompt, input.clientRecordId ?? null, input.forTraining ? 1 : 0, timestamp);
+  // Track provider/model metadata (usage rollups + catalogue stats).
+  db.raw
+    .prepare(
+      `INSERT INTO model_metadata (provider, model, first_seen_at, last_seen_at, usage_count)
+       VALUES (?, ?, ?, ?, 1)
+       ON CONFLICT(provider, model) DO UPDATE SET
+         last_seen_at = excluded.last_seen_at,
+         usage_count = model_metadata.usage_count + 1`,
+    )
+    .run(input.provider, input.model, timestamp, timestamp);
   return {
     id,
     userId: input.userId,
@@ -552,6 +562,36 @@ export function listAuditLogs(
     targetId: row.target_id === null ? undefined : String(row.target_id),
     metadata: row.metadata === null ? undefined : String(row.metadata),
     createdAt: String(row.created_at),
+  }));
+}
+
+// ------------------------------------------------------ model metadata
+
+export interface ModelMetadataRow {
+  provider: string;
+  model: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  usageCount: number;
+}
+
+export function listModelMetadata(db: Database, opts: { limit: number; offset: number; provider?: string }): ModelMetadataRow[] {
+  const where = opts.provider ? "WHERE provider = ?" : "";
+  const params: Array<string | number> = opts.provider ? [opts.provider] : [];
+  const rows = db.raw
+    .prepare(
+      `SELECT provider, model, first_seen_at, last_seen_at, usage_count
+       FROM model_metadata ${where}
+       ORDER BY usage_count DESC, last_seen_at DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .all(...params, opts.limit, opts.offset) as Array<Record<string, unknown>>;
+  return rows.map((row) => ({
+    provider: String(row.provider),
+    model: String(row.model),
+    firstSeenAt: String(row.first_seen_at),
+    lastSeenAt: String(row.last_seen_at),
+    usageCount: Number(row.usage_count),
   }));
 }
 

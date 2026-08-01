@@ -231,6 +231,30 @@ describe("admin", () => {
     expect(training.body).toMatchObject({ optInCount: 0, totalUsers: 2 });
   });
 
+  it("tracks provider/model metadata from recorded prompts", async () => {
+    const b = await freshBackend({ adminEmail: "boss@coder.dev", adminPassword: "adminpass123", adminSuperadmin: true });
+    const { token } = await signup(b, "meta@example.com");
+    await api(b, "/chat/prompt", { method: "POST", token, body: { clientRecordId: "rec_m1", sessionId: "s1", provider: "openai", model: "gpt-5", prompt: "a", response: "b" } });
+    await api(b, "/chat/prompt", { method: "POST", token, body: { clientRecordId: "rec_m2", sessionId: "s1", provider: "openai", model: "gpt-5", prompt: "c", response: "d" } });
+    await api(b, "/chat/prompt", { method: "POST", token, body: { clientRecordId: "rec_m3", sessionId: "s1", provider: "anthropic", model: "claude-sonnet-4", prompt: "e", response: "f" } });
+
+    const adminLogin = await api(b, "/auth/login", { method: "POST", body: { email: "boss@coder.dev", password: "adminpass123" } });
+    const models = await api(b, "/admin/models", { token: adminLogin.body.token });
+    expect(models.status).toBe(200);
+    expect(models.body.models).toEqual([
+      expect.objectContaining({ provider: "openai", model: "gpt-5", usageCount: 2 }),
+      expect.objectContaining({ provider: "anthropic", model: "claude-sonnet-4", usageCount: 1 }),
+    ]);
+
+    // Filter by provider.
+    const filtered = await api(b, "/admin/models?search=anthropic", { token: adminLogin.body.token });
+    expect(filtered.body.models).toHaveLength(1);
+    expect(filtered.body.models[0].model).toBe("claude-sonnet-4");
+
+    // Regular users cannot see it.
+    expect((await api(b, "/admin/models", { token })).status).toBe(403);
+  });
+
   it("rotates the master key and re-encrypts stored keys", async () => {
     const b = await freshBackend({ adminEmail: "boss@coder.dev", adminPassword: "adminpass123", adminSuperadmin: true });
     const { token } = await signup(b, "rot@example.com");

@@ -49,7 +49,7 @@ top — you can use CODER fully offline without an account.
 | **History** | `coder history` (local) and `coder history --remote` (backend) |
 | **Export / erasure** | `coder export` (JSON bundle, keys only as fingerprints) and `coder delete-account` (cascade erase) |
 | **Dashboard** | `coder dashboard` opens the web UI: history, keys, settings, feedback, export; admin views for users / prompts / feedback / logs / training / usage |
-| **Admin** | `coder admin users\|prompts\|feedback\|logs\|training\|usage\|rotate-key\|sync` (admin role required) |
+| **Admin** | `coder admin users\|prompts\|feedback\|logs\|training\|usage\|models\|rotate-key\|sync` (admin role required) |
 | **Auth options** | Email/password (scrypt) plus optional Firebase Auth (RS256 ID-token verification) |
 | **Key rotation** | `coder admin rotate-key` — versioned envelopes, archived keys, re-encrypts everything (superadmin) |
 

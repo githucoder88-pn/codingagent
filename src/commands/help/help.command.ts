@@ -28,7 +28,7 @@ const COMMANDS = [
   ["coder export", "Export your data as JSON"],
   ["coder dashboard", "Open the web dashboard"],
   ["coder server start | status | stop", "Backend lifecycle"],
-  ["coder admin <users|prompts|feedback|logs|training|usage>", "Admin management"],
+  ["coder admin <users|prompts|feedback|logs|training|usage|models>", "Admin management"],
   ["coder sessions", "List / inspect / remove saved sessions"],
   ["coder clear", "Reset the current session's messages"],
   ["coder config show", "Inspect configuration"],

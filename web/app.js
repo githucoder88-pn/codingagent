@@ -354,11 +354,12 @@ function viewAdmin() {
         <button data-tab="logs" class="secondary">Audit logs</button>
         <button data-tab="training" class="secondary">Training</button>
         <button data-tab="usage" class="secondary">Usage</button>
+        <button data-tab="models" class="secondary">Models</button>
       </div>
       <div id="admin-content"><div class="loading">Loading…</div></div>
     </div>`;
 
-  const tabs = { users: adminUsers, prompts: adminPrompts, feedback: adminFeedback, logs: adminLogs, training: adminTraining, usage: adminUsage };
+  const tabs = { users: adminUsers, prompts: adminPrompts, feedback: adminFeedback, logs: adminLogs, training: adminTraining, usage: adminUsage, models: adminModels };
   document.querySelectorAll("[data-tab]").forEach((btn) =>
     btn.addEventListener("click", () => tabs[btn.dataset.tab]().catch((err) => toast(err.message, "err"))),
   );
@@ -436,6 +437,20 @@ async function adminTraining() {
       <div class="grow"><strong>${stats.datasetPromptCount}</strong> prompts in the dataset</div>
     </div>
     <p class="muted">Training data is collected only from users who explicitly opted in, and only for records created after opt-in. Users can revoke at any time.</p>`;
+}
+
+async function adminModels() {
+  const { models } = await api("/admin/models?limit=200&offset=0");
+  $("#admin-content").innerHTML = `
+    <h3>Provider / model metadata</h3>
+    ${models.length === 0
+      ? `<p class="muted">No models recorded yet.</p>`
+      : `<table><thead><tr><th>Provider</th><th>Model</th><th>Uses</th><th>First seen</th><th>Last seen</th></tr></thead>
+         <tbody>${models
+           .map(
+             (m) => `<tr><td>${esc(m.provider)}</td><td class="mono">${esc(m.model)}</td><td>${m.usageCount}</td><td>${fmt(m.firstSeenAt)}</td><td>${fmt(m.lastSeenAt)}</td></tr>`,
+           )
+           .join("")}</tbody></table>`}`;
 }
 
 async function adminUsage() {

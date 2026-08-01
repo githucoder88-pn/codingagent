@@ -62,6 +62,16 @@ export async function loginCommand(ctx: AppContext, opts: LoginOptions = {}): Pr
     `${theme.dim}Sync provider keys: \`coder auth add <provider>\` · Privacy: \`coder settings privacy on\`${theme.reset}\n`,
   );
 
+  // Mirror the account's server-side privacy settings locally so dashboard
+  // toggles are respected by the CLI immediately.
+  try {
+    const authed = ApiClient.at(serverUrl, result.token);
+    const remote = await authed.get<{ settings: { historyEnabled: boolean; trainingOptIn: boolean } }>("/users/me");
+    saveSettings(remote.body.settings);
+  } catch {
+    /* offline — keep local copy */
+  }
+
   // Best-effort: sync unsynced vault keys so the dashboard sees them.
   // (Keys already synced by another account stay put — they belong to
   // whichever account uploaded them.)
@@ -101,6 +111,15 @@ export async function signupCommand(ctx: AppContext, opts: LoginOptions = {}): P
     serverUrl,
     loggedInAt: new Date().toISOString(),
   });
+  // A fresh account starts from server defaults — mirror them locally so
+  // stale local privacy settings never leak into the new account.
+  try {
+    const authed = ApiClient.at(serverUrl, result.token);
+    const remote = await authed.get<{ settings: { historyEnabled: boolean; trainingOptIn: boolean } }>("/users/me");
+    saveSettings(remote.body.settings);
+  } catch {
+    /* offline — keep local copy */
+  }
   logger.info(`Signed up as ${result.user.email}`);
   process.stdout.write(`${theme.success}Account created. Signed in as ${result.user.email}.${theme.reset}\n`);
   return 0;
