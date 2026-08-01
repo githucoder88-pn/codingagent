@@ -132,12 +132,33 @@ export function adminRouter(deps: AdminRouterDeps): Router {
         .all() as Array<{ language: string; c: number; files: number | null }>;
       const totals = db.raw
         .prepare(
-          "SELECT (SELECT COUNT(*) FROM repositories) repos, (SELECT COUNT(*) FROM indexed_files) files, (SELECT COUNT(*) FROM embeddings) embeddings, (SELECT COUNT(*) FROM checkpoints) checkpoints, (SELECT COUNT(*) FROM patches) patches, (SELECT COUNT(*) FROM search_history) searches",
+          "SELECT (SELECT COUNT(*) FROM repositories) repos, (SELECT COUNT(*) FROM indexed_files) files, (SELECT COUNT(*) FROM embeddings) embeddings, (SELECT COUNT(*) FROM checkpoints) checkpoints, (SELECT COUNT(*) FROM patches) patches, (SELECT COUNT(*) FROM search_history) searches, (SELECT COUNT(*) FROM agent_runs) agent_runs",
         )
         .get() as Record<string, number>;
+      // Failure reports + performance metrics.
+      const failures = db.raw
+        .prepare(
+          "SELECT COUNT(*) AS total, SUM(CASE WHEN failures > 0 THEN 1 ELSE 0 END) AS failed, COALESCE(SUM(failures), 0) AS failure_count FROM agent_runs",
+        )
+        .get() as { total: number; failed: number | null; failure_count: number | null };
+      const performance = db.raw
+        .prepare(
+          "SELECT COALESCE(AVG(duration_ms), 0) AS avg_duration_ms, MAX(duration_ms) AS max_duration_ms, (SELECT COUNT(*) FROM prompts WHERE created_at >= datetime('now', '-7 days')) AS prompts_7d FROM agent_runs",
+        )
+        .get() as { avg_duration_ms: number; max_duration_ms: number | null; prompts_7d: number };
       res.json({
         repositories: byLanguage.map((r) => ({ language: r.language, count: r.c, files: r.files ?? 0 })),
         totals,
+        failures: {
+          totalRuns: failures.total,
+          failedRuns: failures.failed ?? 0,
+          failureCount: failures.failure_count ?? 0,
+        },
+        performance: {
+          avgDurationMs: Math.round(performance.avg_duration_ms),
+          maxDurationMs: performance.max_duration_ms,
+          promptsLast7Days: performance.prompts_7d,
+        },
       });
     }),
   );

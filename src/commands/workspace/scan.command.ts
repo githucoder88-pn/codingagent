@@ -7,7 +7,6 @@
  */
 
 import { WorkspaceManager } from "../../workspace/workspace-manager.js";
-import { renderTable } from "../../ui/components/primitives.js";
 import { syncRepositoryToBackend } from "../../sync/workspace-sync.js";
 import type { AppContext } from "../../core/application/application.js";
 
@@ -33,21 +32,21 @@ export async function scanCommand(ctx: AppContext, opts: ScanOptions = {}): Prom
   if (opts.json) {
     process.stdout.write(`${JSON.stringify(stats, null, 2)}\n`);
   } else {
-    const rows = [
-      ["Directories", String(stats.directories)],
-      ["Source files", String(stats.sourceFiles)],
-      ["Functions", String(stats.functions)],
-      ["Classes", String(stats.classes)],
-      ["Interfaces / types", String(stats.interfaces)],
-      ["Imports", String(stats.imports)],
-      ["Tests", String(stats.tests)],
-      ["Lines of code", String(stats.linesOfCode)],
-      ["Language", stats.language],
+    // Spec format: check-mark summary lines.
+    const lines = [
+      `${theme.success}✓ ${stats.directories} directories detected${theme.reset}`,
+      `${theme.success}✓ ${stats.sourceFiles} source files indexed${theme.reset}`,
+      `${theme.success}✓ ${stats.functions} functions discovered${theme.reset}`,
+      `${theme.success}✓ ${stats.classes} classes detected${theme.reset}`,
+      `${theme.success}✓ ${stats.interfaces} interfaces / types found${theme.reset}`,
+      `${theme.success}✓ ${stats.imports} imports indexed${theme.reset}`,
+      `${theme.success}✓ ${stats.tests} tests identified${theme.reset}`,
+      `${theme.success}✓ ${stats.linesOfCode} lines of code${theme.reset}`,
     ];
     process.stdout.write(
       `${theme.bold}Repository scan (${root})${theme.reset}\n` +
-        `${renderTable(["METRIC", "COUNT"], rows)}\n` +
-        `${theme.dim}Files indexed: ${index.files.length} · dependencies: ${index.dependencies.length} · scanned ${stats.scannedAt.slice(0, 19).replace("T", " ")}${theme.reset}\n`,
+        `${lines.join("\n")}\n` +
+        `${theme.dim}Language: ${stats.language} · files: ${index.files.length} · dependencies: ${index.dependencies.length} · scanned ${stats.scannedAt.slice(0, 19).replace("T", " ")}${theme.reset}\n`,
     );
   }
 

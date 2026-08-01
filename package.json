@@ -1,7 +1,7 @@
 {
   "name": "coder",
   "version": "0.3.0",
-  "description": "CODER \u2014 a lightweight, extensible, globally installed AI coding assistant (Phase 2: Data, Auth, and Control Plane).",
+  "description": "CODER — a lightweight, extensible, globally installed AI coding assistant (Phase 2: Data, Auth, and Control Plane).",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -48,20 +48,24 @@
     "chat"
   ],
   "dependencies": {
+    "@babel/parser": "^7.29.8",
+    "@babel/traverse": "^7.29.8",
+    "@babel/types": "^7.29.8",
     "commander": "^12.1.0",
     "diff": "^7.0.0",
     "express": "^5.2.1",
     "pino": "^9.5.0",
     "tree-sitter-wasms": "^0.1.13",
+    "typescript": "5.9.3",
     "web-tree-sitter": "^0.24.7",
-    "zod": "^3.24.1",
-    "typescript": "5.9.3"
+    "zod": "^3.24.1"
   },
   "optionalDependencies": {
     "ink": "^5.2.0",
     "react": "^18.3.1"
   },
   "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
     "@types/diff": "^7.0.2",
     "@types/express": "^5.0.6",
     "@types/node": "^22.10.2",

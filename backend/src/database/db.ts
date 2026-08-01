@@ -169,6 +169,18 @@ CREATE TABLE IF NOT EXISTS search_history (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS agent_runs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  repository_id TEXT REFERENCES repositories(id) ON DELETE CASCADE,
+  task TEXT,
+  tool_calls INTEGER DEFAULT 0,
+  failures INTEGER DEFAULT 0,
+  duration_ms INTEGER,
+  finished INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_prompts_user ON prompts(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_prompts_training ON prompts(for_training, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_responses_prompt ON responses(prompt_id);

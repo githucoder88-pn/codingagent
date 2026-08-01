@@ -129,6 +129,19 @@ export class ContextEngine {
       }
     }
 
+    // Previous edits from the execution ledger (conversation/action history).
+    const recentEdits: ContextBundle["recentEdits"] = [];
+    try {
+      const { ExecutionLedger } = await import("../../execution/ledger.js");
+      const ledger = new ExecutionLedger(this.index.root);
+      for (const record of ledger.recentMutating(10)) {
+        const file = record.touched[0];
+        if (file) recentEdits.push({ tool: record.tool, file, timestamp: record.timestamp, ok: record.ok });
+      }
+    } catch {
+      /* ledger is best-effort */
+    }
+
     return {
       root: this.index.root,
       structure: structureTree(this.index, opts.maxDepth ?? 2),
@@ -141,6 +154,7 @@ export class ContextEngine {
       },
       related: related.slice(0, 15),
       docs: docs.slice(0, 3),
+      recentEdits,
       generatedAt: new Date().toISOString(),
     };
   }
@@ -165,6 +179,11 @@ export class ContextEngine {
       ``,
       `## Related files`,
       bundle.related.map((r) => `  [${r.relation}] ${r.path}`).join("\n"),
+      ``,
+      `## Previous edits`,
+      bundle.recentEdits.length
+        ? bundle.recentEdits.map((e) => `  [${e.timestamp.slice(0, 19).replace("T", " ")}] ${e.tool} ${e.file}${e.ok ? "" : " (failed)"}`).join("\n")
+        : "  (none)",
       ``,
       `## Documentation`,
       bundle.docs.join("\n\n") || "—",

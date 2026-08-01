@@ -70,6 +70,23 @@ export async function agentCommand(ctx: AppContext, opts: AgentCommandOptions): 
 
   process.stdout.write(`\n${theme.bold}Result (${result.iterations} steps, ${result.toolCalls} tool calls):${theme.reset}\n${result.answer}\n`);
 
+  // Record the run summary (failure reports) + resulting patch (best-effort).
+  if (!opts.noSync) {
+    try {
+      const { syncAgentRunToBackend } = await import("../../sync/workspace-sync.js");
+      await syncAgentRunToBackend(ctx, {
+        root,
+        task: opts.task.slice(0, 200),
+        toolCalls: result.toolCalls,
+        failures: scheduler.historyEntries().filter((r) => !r.ok).length,
+        durationMs: undefined,
+        finished: result.finished,
+      });
+    } catch {
+      /* best effort */
+    }
+  }
+
   // Record the resulting patch to the backend (best-effort).
   if (!opts.noSync) {
     try {

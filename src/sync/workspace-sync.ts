@@ -85,6 +85,35 @@ export async function syncCheckpointToBackend(ctx: AppContext, root: string, che
   }
 }
 
+/** Record an agent run summary (failure reports + performance). */
+export async function syncAgentRunToBackend(
+  ctx: AppContext,
+  input: { root: string; task: string; toolCalls: number; failures: number; durationMs?: number; finished: boolean },
+): Promise<boolean> {
+  const api = await client();
+  if (!api) return false;
+  try {
+    const index = await loadCachedIndex(input.root);
+    let repositoryId: string | undefined;
+    if (index) {
+      const repos = await api.get<{ repositories: Array<{ id: string; path: string }> }>("/workspace/repositories");
+      repositoryId = repos.body.repositories.find((r) => r.path === index.root)?.id;
+    }
+    await api.post("/workspace/agent-runs", {
+      repositoryId,
+      task: input.task,
+      toolCalls: input.toolCalls,
+      failures: input.failures,
+      durationMs: input.durationMs,
+      finished: input.finished,
+    });
+    return true;
+  } catch (err) {
+    ctx.logger.warn(`Agent-run sync failed: ${(err as Error).message}`);
+    return false;
+  }
+}
+
 export async function syncPatchToBackend(ctx: AppContext, root: string, summary: string, diff: string): Promise<boolean> {
   const api = await client();
   if (!api) return false;

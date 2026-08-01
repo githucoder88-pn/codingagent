@@ -280,6 +280,23 @@ export const filesystemTools: ToolDefinition[] = [
   },
 ];
 
+/** `move_file` — alias of rename_file (spec lists both operations). */
+export const moveFileTool: ToolDefinition = {
+  id: "move_file",
+  name: "Move a file",
+  description: "Move a file (or directory) to a new path within the workspace (alias of rename_file).",
+  level: "balanced",
+  mutating: true,
+  params: [
+    pathParam("from"),
+    { name: "to", type: "string", required: true, description: "Destination path" },
+  ],
+  async execute(params, ctx: ToolContext) {
+    const rename = filesystemTools.find((t) => t.id === "rename_file")!;
+    return rename.execute(params, ctx);
+  },
+};
+
 function listRecursive(dir: string, depth: number): string[] {
   if (depth <= 0) return [];
   const out: string[] = [];

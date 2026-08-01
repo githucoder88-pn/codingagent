@@ -509,6 +509,8 @@ async function adminModels() {
 async function adminRepositories() {
   const data = await api("/admin/workspace");
   const totals = data.totals || {};
+  const failures = data.failures || {};
+  const performance = data.performance || {};
   $("#admin-content").innerHTML = `
     <h3>Repository analytics</h3>
     <div class="row">
@@ -518,6 +520,19 @@ async function adminRepositories() {
       <div class="grow"><strong>${totals.checkpoints}</strong> checkpoints</div>
       <div class="grow"><strong>${totals.patches}</strong> patches</div>
       <div class="grow"><strong>${totals.searches}</strong> searches</div>
+      <div class="grow"><strong>${totals.agent_runs ?? 0}</strong> agent runs</div>
+    </div>
+    <h3>Failure reports</h3>
+    <div class="row">
+      <div class="grow">Agent runs: <strong>${failures.totalRuns ?? 0}</strong></div>
+      <div class="grow">Runs with failures: <strong>${failures.failedRuns ?? 0}</strong></div>
+      <div class="grow">Failed tool calls: <strong>${failures.failureCount ?? 0}</strong></div>
+    </div>
+    <h3>Performance</h3>
+    <div class="row">
+      <div class="grow">Avg agent duration: <strong>${performance.avgDurationMs ?? "—"} ms</strong></div>
+      <div class="grow">Max duration: <strong>${performance.maxDurationMs ?? "—"} ms</strong></div>
+      <div class="grow">Prompts (7 days): <strong>${performance.promptsLast7Days ?? 0}</strong></div>
     </div>
     <h3>By language</h3>
     ${data.repositories.length === 0

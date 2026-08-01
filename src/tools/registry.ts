@@ -5,7 +5,7 @@
  * validation) and resolves tools by id for the executor and the agent.
  */
 
-import { filesystemTools } from "./filesystem.js";
+import { filesystemTools, moveFileTool } from "./filesystem.js";
 import { shellTools } from "./shell.js";
 import { gitTools } from "./git.js";
 import { patchTools } from "./patch.js";
@@ -19,6 +19,7 @@ import { type PermissionLevel } from "../workspace/types.js";
 export const ALL_TOOLS: ToolDefinition[] = [
   ...workspaceTools,
   ...filesystemTools,
+  moveFileTool,
   ...searchTools,
   ...shellTools,
   ...gitTools,

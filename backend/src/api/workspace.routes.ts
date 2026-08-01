@@ -216,6 +216,27 @@ export function workspaceRouter(db: Database): Router {
     }),
   );
 
+  // POST /api/workspace/agent-runs — record an agent execution summary
+  // (failure reports + performance metrics for the admin dashboard).
+  router.post(
+    "/agent-runs",
+    asyncHandler(async (req: AuthedRequest, res) => {
+      const task = typeof req.body?.task === "string" ? req.body.task.slice(0, 500) : undefined;
+      const toolCalls = typeof req.body?.toolCalls === "number" ? req.body.toolCalls : 0;
+      const failures = typeof req.body?.failures === "number" ? req.body.failures : 0;
+      const durationMs = typeof req.body?.durationMs === "number" ? req.body.durationMs : undefined;
+      const finished = typeof req.body?.finished === "boolean" ? req.body.finished : true;
+      const repositoryId = typeof req.body?.repositoryId === "string" ? req.body.repositoryId : undefined;
+      const id = randomId("rec");
+      db.raw
+        .prepare(
+          "INSERT INTO agent_runs (id, user_id, repository_id, task, tool_calls, failures, duration_ms, finished, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(id, req.auth!.userId, repositoryId ?? null, task ?? null, toolCalls, failures, durationMs ?? null, finished ? 1 : 0, now());
+      res.status(201).json({ id });
+    }),
+  );
+
   // POST /api/workspace/patches
   router.post(
     "/patches",

@@ -9,6 +9,7 @@
 
 import { type SymbolInfo } from "../types.js";
 import { parseTypeScript, extractTypeScriptImports, extractTypeScriptExports } from "./typescript-parser.js";
+import { parseWithBabel, extractBabelImports, extractBabelExports } from "./babel-parser.js";
 import { parseWithTreeSitter, extractImportsTreeSitter, treeSitterSupported } from "./tree-sitter-parser.js";
 import { parseFallback, extractImportsFallback, extractExportsFallback } from "./fallback-parser.js";
 import { languageForFile, isSourceFile } from "../repository/scanner.js";
@@ -21,7 +22,25 @@ export interface ParsedFile {
 
 export async function parseFile(source: string, filePath: string, language?: string): Promise<ParsedFile> {
   const lang = language ?? languageForFile(filePath);
-  if (lang === "typescript" || lang === "javascript") {
+  if (lang === "typescript") {
+    return {
+      symbols: parseTypeScript(source, filePath),
+      imports: extractTypeScriptImports(source, filePath),
+      exports: extractTypeScriptExports(source, filePath),
+    };
+  }
+
+  // JavaScript / JSX: Babel first (handles JSX, Flow and experimental
+  // syntax the TS API rejects), TypeScript API as fallback.
+  if (lang === "javascript") {
+    const babelSymbols = parseWithBabel(source, filePath);
+    if (babelSymbols) {
+      return {
+        symbols: babelSymbols,
+        imports: extractBabelImports(source, filePath) ?? extractTypeScriptImports(source, filePath),
+        exports: extractBabelExports(source, filePath) ?? [],
+      };
+    }
     return {
       symbols: parseTypeScript(source, filePath),
       imports: extractTypeScriptImports(source, filePath),

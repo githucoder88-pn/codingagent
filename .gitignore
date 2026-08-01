@@ -6,3 +6,4 @@ coverage/
 .coder/
 *.log
 .DS_Store
+.github/workflows/ci.yml

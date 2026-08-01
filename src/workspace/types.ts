@@ -94,6 +94,8 @@ export interface ContextBundle {
   dependencies: { edges: number; packages: string[]; topDependencies: Array<{ from: string; to: string; kind: string }> };
   related: RelatedFile[];
   docs: string[];
+  /** Recent tool-edit history (previous edits, for continuity). */
+  recentEdits: Array<{ tool: string; file: string; timestamp: string; ok: boolean }>;
   generatedAt: string;
 }
 

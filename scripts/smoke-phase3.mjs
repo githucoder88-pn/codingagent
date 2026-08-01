@@ -57,7 +57,8 @@ let failures = 0;
 try {
   console.log("Smoke testing the Phase 3 exit condition:\n");
 
-  failures += check("scan", run(["scan", "--dir", repo], env).stdout.includes("Source files"));
+  const scanOut = run(["scan", "--dir", repo], env).stdout;
+  failures += check("scan", scanOut.includes("source files indexed") && scanOut.includes("✓"));
   failures += check("search definition", run(["search", "authenticate", "--dir", repo, "--kind", "definition"], env).stdout.includes("src/auth.ts"));
   failures += check("search content", run(["search", "AuthService", "--dir", repo], env).stdout.includes("src/auth.ts"));
   failures += check("files", run(["files", "--dir", repo], env).stdout.includes("src/index.ts"));

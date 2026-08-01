@@ -131,6 +131,29 @@ describe("workspace API", () => {
     expect((await api(b, "/workspace", { token })).body.checkpoints).toHaveLength(0);
   });
 
+  it("records agent runs (failure reports) and surfaces them in analytics", async () => {
+    const b = await freshBackend({ adminEmail: "boss@coder.dev", adminPassword: "adminpass123", adminSuperadmin: true });
+    const { token } = await signup(b, "agent@example.com");
+
+    await api(b, "/workspace/agent-runs", {
+      method: "POST",
+      token,
+      body: { task: "fix errors", toolCalls: 5, failures: 0, durationMs: 1200, finished: true },
+    });
+    await api(b, "/workspace/agent-runs", {
+      method: "POST",
+      token,
+      body: { task: "add auth", toolCalls: 8, failures: 2, durationMs: 3000, finished: false },
+    });
+
+    const login = await api(b, "/auth/login", { method: "POST", body: { email: "boss@coder.dev", password: "adminpass123" } });
+    const analytics = await api(b, "/admin/workspace", { token: login.body.token });
+    expect(analytics.body.totals.agent_runs).toBe(2);
+    expect(analytics.body.failures).toEqual({ totalRuns: 2, failedRuns: 1, failureCount: 2 });
+    expect(analytics.body.performance.avgDurationMs).toBe(2100);
+    expect(analytics.body.performance.maxDurationMs).toBe(3000);
+  });
+
   it("requires auth for the workspace API", async () => {
     const b = await freshBackend();
     expect((await api(b, "/workspace/repositories", { method: "POST", body: { path: "x", name: "x" } })).status).toBe(401);

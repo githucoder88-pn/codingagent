@@ -29,13 +29,16 @@ coder chat --safe | --balanced | --full-auto
   classifies files by language and role (source / test / documentation),
   detects the primary language, and reports: directories, source files,
   functions, classes, interfaces, imports, tests, lines of code.
-- **Parsers** — three layers:
-  1. **TypeScript compiler API** for `.ts/.tsx/.js/.jsx` (functions,
-     classes, interfaces, enums, types, methods, imports, exports with
-     line/column and doc comments).
-  2. **Tree-sitter (WASM)** via `web-tree-sitter` + `tree-sitter-wasms`
+- **Parsers** — four layers:
+  1. **Babel** (`@babel/parser` + `@babel/traverse`) for `.js/.jsx`
+     (handles JSX, Flow and experimental syntax; dialect auto-detected via
+     the `@flow` pragma).
+  2. **TypeScript compiler API** for `.ts/.tsx` (functions, classes,
+     interfaces, enums, types, methods, imports, exports with line/column
+     and doc comments).
+  3. **Tree-sitter (WASM)** via `web-tree-sitter` + `tree-sitter-wasms`
      for Python, Go, Rust, Java, C, C++, C#, PHP — no native compilation.
-  3. **Regex fallback** for anything else, so the indexer always produces
+  4. **Regex fallback** for anything else, so the indexer always produces
      symbols.
 - **Indexing** (`src/workspace/indexer`) — parses every source file into a
   `RepoIndex` (files with hashes, symbols, imports/exports, test markers,
@@ -54,7 +57,9 @@ coder chat --safe | --balanced | --full-auto
   discovery and semantic file search.
 - **Context engine** (`src/workspace/context`) — bundles structure, stats,
   git state (branch, last commit, changed files), dependency summary,
-  related files and README documentation — the payload fed to the agent.
+  related files, previous tool edits (from the execution ledger) and
+  README documentation — the payload fed to the agent. Output is bounded
+  (truncated docs, capped lists) for context compression.
 
 ## Tools
 
@@ -64,7 +69,7 @@ All tools are registered in `src/tools/registry.ts` (`coder tools`):
 | --- | --- | --- |
 | Workspace | `scan`, `files`, `context` | safe |
 | Filesystem | `read_file`, `list_directory` | safe |
-| Filesystem | `write_file`, `append_file`, `replace_text`, `delete_file`, `rename_file`, `copy_file`, `create_directory` | balanced |
+| Filesystem | `write_file`, `append_file`, `replace_text`, `delete_file`, `rename_file`, `move_file`, `copy_file`, `create_directory` | balanced |
 | Search | `search_files`, `search_content`, `search_symbols`, `search_dependencies`, `search_git_history`, `find_definition`, `find_references`, `find_tests`, `find_related` | safe |
 | Git | `git_status`, `git_diff`, `git_log`, `git_branch` | safe |
 | Git | `git_commit`, `git_checkout`, `git_restore` | balanced |
@@ -120,4 +125,6 @@ When signed in, `coder scan` uploads the repository index (summary +
 files + embeddings) to the control plane; search queries are logged to
 `search_history`, checkpoints and agent-generated patches to their tables.
 The web dashboard shows Workspace (user) and Repositories (admin) views;
-admins get repository analytics via `GET /api/admin/workspace`.
+admins get repository analytics via `GET /api/admin/workspace`, including
+storage totals, failure reports (agent runs with failed tool calls) and
+performance metrics (average/max agent duration, 7-day prompt volume).

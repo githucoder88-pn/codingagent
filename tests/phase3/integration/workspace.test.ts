@@ -128,6 +128,18 @@ describe("embeddings + context", () => {
   });
 });
 
+describe("move_file tool", () => {
+  it("moves a file within the workspace", async () => {
+    const scheduler = new ExecutionScheduler({ cwd: repoDir, level: "full-auto" });
+    await scheduler.execute("write_file", { path: "move-me.txt", content: "move" });
+    const moved = await scheduler.execute("move_file", { from: "move-me.txt", to: "moved.txt" });
+    expect(moved.ok).toBe(true);
+    expect(existsSync(join(repoDir, "move-me.txt"))).toBe(false);
+    expect(existsSync(join(repoDir, "moved.txt"))).toBe(true);
+    expect(readFileSync(join(repoDir, "moved.txt"), "utf8")).toBe("move");
+  });
+});
+
 describe("filesystem + execution tools", () => {
   it("reads, writes, replaces and lists files within the workspace", async () => {
     const scheduler = new ExecutionScheduler({ cwd: repoDir, level: "full-auto" });

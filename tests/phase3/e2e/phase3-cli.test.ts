@@ -50,15 +50,16 @@ afterAll(() => {
 });
 
 describe("workspace intelligence (spawned CLI)", () => {
-  it("coder scan reports the Phase 3 statistics", async () => {
+  it("coder scan reports the Phase 3 statistics (spec ✓ format)", async () => {
     const res = await run(["scan", "--dir", repo], env());
     expect(res.code).toBe(0);
-    expect(res.stdout).toContain("Directories");
-    expect(res.stdout).toContain("Source files");
-    expect(res.stdout).toContain("Functions");
-    expect(res.stdout).toContain("Classes");
-    expect(res.stdout).toContain("Imports");
-    expect(res.stdout).toContain("Tests");
+    expect(res.stdout).toContain("directories detected");
+    expect(res.stdout).toContain("source files indexed");
+    expect(res.stdout).toContain("functions discovered");
+    expect(res.stdout).toContain("classes detected");
+    expect(res.stdout).toContain("imports indexed");
+    expect(res.stdout).toContain("tests identified");
+    expect(res.stdout).toContain("✓");
     expect(res.stdout).toContain("typescript");
   });
 
