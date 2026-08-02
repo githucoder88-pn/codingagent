@@ -18,7 +18,7 @@ export class OpenAiProvider extends BaseProvider {
   readonly id: string = "openai";
   readonly name: string = "OpenAI";
   readonly defaultModel: string = "gpt-4o-mini";
-  readonly requiresKey = true;
+  readonly requiresKey: boolean = true;
 
   protected defaultBaseUrl(): string {
     return DEFAULT_BASE_URL;

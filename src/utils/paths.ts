@@ -23,6 +23,7 @@ export function coderHome(): string {
 
 export const paths = {
   root: () => coderHome(),
+  repositories: () => join(coderHome(), "repositories"),
   config: () => join(coderHome(), FILES.config),
   providers: () => join(coderHome(), FILES.providers),
   sessionsDir: () => join(coderHome(), FILES.sessionsDir),
@@ -48,6 +49,7 @@ export function ensureCoderDirs(): void {
     paths.sessionsDir(),
     paths.logsDir(),
     paths.cacheDir(),
+    paths.repositories(),
   ]) {
     mkdirSync(dir, { recursive: true });
   }

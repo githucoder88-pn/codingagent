@@ -7,8 +7,8 @@
 
 export const APP_NAME = "coder";
 export const APP_DISPLAY_NAME = "CODER";
-export const VERSION = "0.3.0";
-export const PHASE = "Phase 3 — Workspace Intelligence & Tool Execution Platform";
+export const VERSION = "7.0.0";
+export const PHASE = "Phase 11 — Offline-First Runtime, Personal Mode, Persistent Pet Mode";
 
 /** Default directory holding all user data: `~/.coder` (override with CODER_HOME). */
 export const DEFAULT_CONFIG_DIR_NAME = ".coder";
@@ -75,8 +75,24 @@ export const EXIT = {
 } as const;
 
 /** Registered provider ids. `mock` is a built-in offline provider used by
- *  development, smoke tests and e2e tests (no network, no API key). */
-export const PROVIDER_IDS = ["openai", "anthropic", "gemini", "openrouter", "mock"] as const;
+ *  development, smoke tests and e2e tests (no network, no API key). The
+ *  Phase 8 global network adds OpenAI-compatible providers. */
+export const PROVIDER_IDS = [
+  "openai",
+  "anthropic",
+  "gemini",
+  "openrouter",
+  "groq",
+  "deepseek",
+  "cohere",
+  "together",
+  "xai",
+  "azure",
+  "bedrock",
+  "litellm",
+  "ollama",
+  "mock",
+] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 /** Environment variables honoured by CODER. */

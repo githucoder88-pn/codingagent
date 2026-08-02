@@ -2,6 +2,69 @@
 
 All notable changes to CODER are documented here.
 
+## [7.0.0] — 2026-08-01
+
+### Phases 4–11 — Full Platform Reconstruction → Offline-First Runtime
+
+CODER grows from a workspace tool into an open, extensible, provider-independent
+AI engineering platform that works with **zero cloud**.
+
+#### Phase 4 — Multi-Agent Orchestration, MCP, Extensions, Skills, Tasks, Workflows
+- **Agent roles** (`src/orchestration/roles.ts`): planner, researcher, developer,
+  reviewer, tester, security, documenter, memory — each with a system prompt,
+  tool subset and permission level. `coder roles`, `coder plan`, `coder orchestrate`.
+- **Orchestration pipeline** (plan → research → implement → test → review →
+  document → report) and reusable **workflows** (`coder workflow list|install|run`).
+- **MCP** servers (`coder mcp add|remove|enable|list|connect|disconnect|discover`)
+  with discovery + tool execution through the scheduler.
+- **Extensions** (`extension.json`), **skills** (react, python, devops, database,
+  security, ui, testing, refactor), and a persisted **task queue**
+  (`~/.coder/tasks/queue.json`; queued → running → succeeded|failed|cancelled).
+
+#### Phase 5 / 7 — Cognitive Core & Adaptive Intelligence
+- **CognitiveCore** (`src/cognitive/`): planning, reasoning, reflection, learning,
+  world-model, memory, evaluation, adaptation, prediction, optimization engines.
+- `coder evolve <task>` (observe → … → learn; adaptation lowers riskThreshold),
+  `coder research <topic>`, `coder cognitive status`.
+- **Scoped memory** hierarchy (immediate→session, working→project, long-term→user,
+  global) with episodic/semantic/procedural kinds; `coder memory store|recall|search`.
+- Distributed execution: `coder worker --once`, `coder cluster status`.
+
+#### Phase 6 — Enterprise Cloud Runtime
+- **Organizations** (`coder org create|list|show|member|usage|memory`), cloud
+  **workspaces** (`coder workspace create|list|start|stop|destroy`), `coder runtime`.
+- Backend tables: `organizations`, `organization_members`, `usage_metrics`,
+  `shared_memory`, `cloud_workspaces`.
+
+#### Phase 8 — Global Knowledge Network & Model Intelligence
+- **Knowledge graph** (`coder knowledge graph|stats|search`; entity hierarchy,
+  weight-bumped reinforcement, ranked search) at `~/.coder/cache/knowledge/graph.json`.
+- **ModelRouter** + `coder model benchmark|info` (classification, cost estimation,
+  cost-optimized routing). **14 providers** registered (added groq, deepseek,
+  cohere, together, xai, azure, bedrock, litellm, ollama).
+
+#### Phase 9 — Autonomous Engineering Civilization
+- **Civilization** (Executive + Architecture/Research/Engineering/Security/
+  Infrastructure/Documentation/Quality directors), keyword-based allocation.
+  `coder civilization run|status` (alias `civ`), `coder director <name> <task>`.
+
+#### Phase 11 — Offline-First Runtime, Personal Mode, Persistent Pet Mode
+- `coder --offline` global flag (bare → status panel), `coder run --mode offline`,
+  and **graceful cloud degradation** (unreachable backend → local + sync outbox).
+- **Sync outbox** + `coder sync --flush`; **recovery** (`coder recover`); key
+  management Mode 3 (`coder connect workspace|list|remove`).
+- Persistent **pet/daemon** (`coder daemon start|status|stop`, `coder pet`),
+  `coder restore [id]`, `coder status [--json]`, `checkpoint` alias.
+- `ExecutionMode` gains `offline`.
+
+#### Tooling & docs
+- 301 tests across unit / integration / e2e + phase suites; 10 smoke scripts
+  (smoke + phase2…phase9 + phase11). Docs: orchestration, cognitive,
+  enterprise-adaptive, civilization, refactoring, offline (+ README/CHANGELOG).
+- Version bumped to 7.0.0; `VERSION`/`PHASE` in `src/core/constants`, the e2e
+  version assertion, `scripts/smoke.mjs`, and the backend health endpoint all read
+  the single source of truth.
+
 ## [0.3.0] — 2026-08-01
 
 ### Phase 3 — Workspace Intelligence & Tool Execution Platform

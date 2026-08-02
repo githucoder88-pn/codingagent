@@ -51,7 +51,7 @@ describe("coder CLI (e2e)", () => {
   it("prints the version", async () => {
     const res = await run(["--version"], env());
     expect(res.code).toBe(0);
-    expect(res.stdout.trim()).toBe("0.3.0");
+    expect(res.stdout.trim()).toBe("7.0.0");
   });
 
   it("shows extended help with all command groups", async () => {
