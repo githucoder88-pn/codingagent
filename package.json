@@ -1,7 +1,7 @@
 {
   "name": "coder",
-  "version": "0.3.0",
-  "description": "CODER — a lightweight, extensible, globally installed AI coding assistant (Phase 2: Data, Auth, and Control Plane).",
+  "version": "7.0.0",
+  "description": "CODER — an open, extensible, provider-independent AI engineering platform that works with zero cloud (Phase 11: Offline-First Runtime).",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -34,8 +34,16 @@
     "test:e2e": "npm run build && vitest run tests/e2e",
     "smoke": "node scripts/smoke.mjs",
     "smoke:phase2": "node scripts/smoke-phase2.mjs",
-    "prepublishOnly": "npm run typecheck && npm run build && npm test",
-    "smoke:phase3": "node scripts/smoke-phase3.mjs"
+    "smoke:phase3": "node scripts/smoke-phase3.mjs",
+    "smoke:phase4": "node scripts/smoke-phase4.mjs",
+    "smoke:phase5": "node scripts/smoke-phase5.mjs",
+    "smoke:phase6": "node scripts/smoke-phase6.mjs",
+    "smoke:phase7": "node scripts/smoke-phase7.mjs",
+    "smoke:phase8": "node scripts/smoke-phase8.mjs",
+    "smoke:phase9": "node scripts/smoke-phase9.mjs",
+    "smoke:phase11": "node scripts/smoke-phase11.mjs",
+    "smoke:all": "npm run smoke && npm run smoke:phase2 && npm run smoke:phase3 && npm run smoke:phase4 && npm run smoke:phase5 && npm run smoke:phase6 && npm run smoke:phase7 && npm run smoke:phase8 && npm run smoke:phase9 && npm run smoke:phase11",
+    "prepublishOnly": "npm run typecheck && npm run build && npm test"
   },
   "keywords": [
     "ai",

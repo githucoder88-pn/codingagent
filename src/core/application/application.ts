@@ -22,6 +22,7 @@ import { AnthropicProvider } from "../../providers/anthropic/anthropic.provider.
 import { GeminiProvider } from "../../providers/gemini/gemini.provider.js";
 import { OpenRouterProvider } from "../../providers/openrouter/openrouter.provider.js";
 import { MockProvider } from "../../providers/mock/mock.provider.js";
+import { OpenAiCompatibleProvider, AzureOpenAiProvider } from "../../providers/openai-compatible.provider.js";
 import { type Theme, effectiveTheme } from "../../ui/themes/theme.js";
 import { Container } from "../container/container.js";
 import { ensureCoderDirs } from "../../utils/paths.js";
@@ -79,6 +80,16 @@ export function buildContainer(): Container {
     registry.register(new AnthropicProvider(config, http));
     registry.register(new GeminiProvider(config, http));
     registry.register(new OpenRouterProvider(config, http));
+    // Phase 8 — global model network (OpenAI-compatible providers).
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1", defaultModel: "llama-3.3-70b-versatile" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "deepseek", name: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", defaultModel: "deepseek-chat" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "cohere", name: "Cohere", baseUrl: "https://api.cohere.ai/v1", defaultModel: "command-r-plus" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "together", name: "Together AI", baseUrl: "https://api.together.xyz/v1", defaultModel: "meta-llama/Llama-3-70b-chat-hf" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "xai", name: "xAI (Grok)", baseUrl: "https://api.x.ai/v1", defaultModel: "grok-2-latest" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "bedrock", name: "Amazon Bedrock (proxy)", baseUrl: "https://bedrock-runtime.example.com/v1", defaultModel: "anthropic.claude-3-5-sonnet" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "litellm", name: "LiteLLM (proxy)", baseUrl: "http://localhost:4000/v1", defaultModel: "gpt-4o-mini" }));
+    registry.register(new OpenAiCompatibleProvider(config, http, { id: "ollama", name: "Ollama (local)", baseUrl: "http://localhost:11434/v1", defaultModel: "llama3", requiresKey: false }));
+    registry.register(new AzureOpenAiProvider(config, http, { id: "azure", name: "Azure OpenAI", baseUrl: "https://your-resource.openai.azure.com", defaultModel: "gpt-4o-mini" }));
     registry.register(new MockProvider());
     return registry;
   });

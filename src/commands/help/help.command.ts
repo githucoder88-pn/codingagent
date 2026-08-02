@@ -43,6 +43,40 @@ const COMMANDS = [
   ["coder config show", "Inspect configuration"],
   ["coder delete-account", "Permanently delete your account"],
   ["coder help", "Show this help"],
+  // Phase 4 — orchestration, MCP, extensions, skills, tasks, workflows
+  ["coder roles", "List the available agent roles"],
+  ["coder plan | orchestrate <task>", "Plan / run a multi-agent pipeline"],
+  ["coder workflow list | install | run", "Reusable role pipelines"],
+  ["coder mcp add | list | discover | connect", "MCP servers + tools"],
+  ["coder extension install | list | update", "Extensions"],
+  ["coder skill list | use | create", "Domain skills"],
+  ["coder task run | list | status | cancel", "Persisted task queue"],
+  // Phase 5/7 — cognitive
+  ["coder cognitive status", "Cognitive core state"],
+  ["coder evolve <task>", "Adaptive self-improvement loop"],
+  ["coder research <topic>", "Autonomous research engine"],
+  // Phase 5/7/9 — memory
+  ["coder memory store | recall | search --scope", "Scoped memory (session/project/user/global)"],
+  // Phase 8 — knowledge + models
+  ["coder knowledge graph | stats | search", "Global knowledge graph"],
+  ["coder model benchmark | info", "Model benchmark / classification + cost"],
+  // Phase 6 — enterprise
+  ["coder org create | list | member | usage | memory", "Organizations"],
+  ["coder workspace create | list | start | stop | destroy", "Cloud workspaces"],
+  ["coder runtime", "Runtime monitoring"],
+  // Phase 9 — civilization + distributed
+  ["coder civilization run | status", "Engineering civilization (alias: civ)"],
+  ["coder director <name> <task>", "Dispatch to a single director"],
+  ["coder cluster status | worker --once", "Distributed cluster + workers"],
+  // Phase 11 — offline-first
+  ["coder run <task> --mode local|hybrid|cloud|agent|enterprise|organization|offline", "Runtime task dispatcher"],
+  ["coder --offline", "Force offline (bare: open the status panel)"],
+  ["coder pet [--autonomous] | daemon start | status | stop", "Persistent pet + daemon"],
+  ["coder status [--json]", "Runtime status panel"],
+  ["coder connect workspace <id> | list | remove", "Workspace connections (key mode 3)"],
+  ["coder sync --flush | recover", "Drain the offline outbox / recover tasks"],
+  ["coder restore [id]", "Restore a session"],
+  ["coder checkpoint create | list | restore | delete", "Checkpoint alias"],
 ] as const;
 
 const EXAMPLES = [

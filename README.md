@@ -2,25 +2,36 @@
 
 **A lightweight, extensible, globally installed AI coding assistant.**
 
-**Version 0.3.0 — Phase 3 (Workspace Intelligence & Tool Execution Platform)**
+**Version 7.0.0 — Phase 11 (Offline-First Runtime, Personal Mode, Persistent Pet Mode)**
 
-CODER is a command-line AI assistant that talks to OpenAI, Anthropic, Gemini
-and OpenRouter from your terminal — and now it is also a **platform**: secure
-accounts, encrypted key storage, an owned backend + database, prompt /
-response / feedback recording, opt-in training data, admin tooling and a web
-dashboard.
+CODER is an open, extensible, provider-independent AI engineering platform that
+talks to 14 providers (OpenAI, Anthropic, Gemini, OpenRouter, Groq, DeepSeek,
+Cohere, Together, xAI, Azure, Bedrock, LiteLLM, Ollama + an offline `mock`) from
+your terminal — and orchestrates multi-agent pipelines, a cognitive core, a
+global knowledge graph, an engineering civilization, and a full enterprise cloud
+layer. **It works with zero cloud.**
 
 ```console
 $ npm install -g coder
 
-$ coder signup                      # create your account
-$ coder login
-$ coder auth add openrouter         # key encrypted locally + on the backend
-$ coder settings privacy on         # explicit privacy control
-$ coder ask "Build a Todo application."
-$ coder feedback 5 "Worked well"
-$ coder dashboard                   # web control center
+$ coder roles                      # multi-agent roles
+$ coder orchestrate "add login"    # plan → research → implement → test → review → document
+$ coder evolve "ship the feature"  # adaptive self-improvement loop
+$ coder civilization run "harden security and deploy"
+$ coder --offline                  # open the runtime status panel (zero cloud)
+$ coder status                     # Mode · Backend · Memory · Pet · outbox · tasks
 ```
+
+## What's new in v7.0.0 (Phases 4–11)
+
+| Phase | Highlights |
+| --- | --- |
+| **4 — Orchestration** | Agent roles, `plan`/`orchestrate`, workflows, MCP, extensions, skills, task queue |
+| **5/7 — Cognitive** | CognitiveCore (10 engines), `evolve`, `research`, scoped memory hierarchy, workers/cluster |
+| **6 — Enterprise** | Organizations, cloud workspaces, `runtime`, multi-tenant backend tables |
+| **8 — Knowledge** | Global knowledge graph, `model benchmark`/`info`, ModelRouter, 14 providers |
+| **9 — Civilization** | Directors, `civilization run` (alias `civ`), `director`, keyword allocation |
+| **11 — Offline-first** | `--offline`, graceful cloud degradation, sync outbox, recovery, pet/daemon, `status`, `connect`, `restore` |
 
 ## Phase 1 (foundation) still works exactly as before
 
@@ -130,9 +141,10 @@ coder help
 npm install
 npm run dev -- ask "hello"          # run from source (tsx)
 npm run typecheck
-npm test                            # 168 unit + integration + e2e tests
+npm test                            # 301 unit + integration + e2e + phase tests
 npm run smoke                       # Phase 1 exit criteria
 npm run smoke:phase2                # Phase 2 exit example
+npm run smoke:all                   # all 10 smoke scripts (phase 1–9, 11)
 npm run build                       # dist/cli.js + dist/server.js + dist/web
 ```
 
@@ -145,6 +157,12 @@ npm run build                       # dist/cli.js + dist/server.js + dist/web
 - [Security model](docs/security.md) — encryption, hashing, auth, privacy, training policy
 - [Backend API](docs/backend-api.md) — full control-plane API reference
 - [Workspace](docs/workspace.md) — scanning, indexing, tools, permissions, agent
+- [Orchestration](docs/orchestration.md) — agent roles, pipelines, workflows, MCP, extensions, skills, tasks
+- [Cognitive](docs/cognitive.md) — CognitiveCore, evolve, research, memory hierarchy
+- [Enterprise & adaptive](docs/enterprise-adaptive.md) — organizations, workspaces, knowledge graph, model intelligence
+- [Civilization](docs/civilization.md) — directors, civilization run, distributed cluster
+- [Offline-first](docs/offline.md) — `--offline`, sync outbox, recovery, pet/daemon, status, storage layout
+- [Refactoring notes](docs/refactoring.md) — Phase 4–11 architecture & extension points
 
 ## License
 

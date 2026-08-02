@@ -187,6 +187,61 @@ CREATE INDEX IF NOT EXISTS idx_responses_prompt ON responses(prompt_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON api_sessions(user_id);
+
+-- Phase 6: enterprise / multi-tenant tables
+CREATE TABLE IF NOT EXISTS organizations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plan TEXT NOT NULL DEFAULT 'team',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS organization_members (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner','admin','member')),
+  created_at TEXT NOT NULL,
+  UNIQUE (org_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS usage_metrics (
+  id TEXT PRIMARY KEY,
+  org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT,
+  model TEXT,
+  tokens INTEGER DEFAULT 0,
+  requests INTEGER DEFAULT 1,
+  recorded_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS shared_memory (
+  id TEXT PRIMARY KEY,
+  org_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL DEFAULT 'global',
+  key TEXT NOT NULL,
+  value TEXT NOT NULL,
+  created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cloud_workspaces (
+  id TEXT PRIMARY KEY,
+  org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+  owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  environment TEXT NOT NULL DEFAULT 'local',
+  status TEXT NOT NULL DEFAULT 'stopped',
+  region TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_members ON organization_members(org_id);
+CREATE INDEX IF NOT EXISTS idx_workspaces_org ON cloud_workspaces(org_id);
 `;
 
 export class Database {

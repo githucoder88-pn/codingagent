@@ -58,6 +58,33 @@ export class MockProvider implements Provider {
   }
 
   /**
+   * Per-role deterministic completions (Phase 4+). When the system prompt
+   * carries a `CODER AGENT ROLE: <role>` marker, the mock returns a canned,
+   * role-specific completion so multi-agent pipelines are fully testable
+   * offline. Lower-cased, whitespace-tolerant lookup.
+   */
+  private roleReply(role: string, userMessage: string): string {
+    const r = role.trim().toLowerCase();
+    const out: Record<string, string> = {
+      planner: `Plan: decompose "${userMessage}" into ordered, verifiable steps; identify risks and dependencies.`,
+      researcher: `Research: survey the codebase and prior art for "${userMessage}"; surface relevant symbols, patterns and constraints.`,
+      developer: `Develop: implement "${userMessage}" following existing conventions; keep changes small and testable.`,
+      reviewer: `Review: audit the implementation of "${userMessage}" for correctness, style, security and regressions.`,
+      tester: `Test: design and run tests covering "${userMessage}"; report pass/fail and coverage gaps.`,
+      security: `Security: threat-model "${userMessage}"; flag injection, secrets, authz and dependency risks.`,
+      documenter: `Document: record "${userMessage}" in docs, README and inline comments; keep examples accurate.`,
+      memory: `Memory: persist key facts and lessons from "${userMessage}" for future sessions.`,
+      coordinator: `Coordinate: allocate "${userMessage}" across directors and reconcile their outputs.`,
+      architect: `Architect: design the system structure for "${userMessage}"; choose patterns and boundaries.`,
+      engineer: `Engineer: build and integrate the components for "${userMessage}".`,
+      optimizer: `Optimizer: profile and tune performance for "${userMessage}"; reduce cost and latency.`,
+      evaluator: `Evaluator: score outcomes for "${userMessage}" against goals; surface trade-offs.`,
+      deployment: `Deployment: package and roll out "${userMessage}"; verify health and rollback paths.`,
+    };
+    return out[r] ?? `Role ${role}: processed "${userMessage}".`;
+  }
+
+  /**
    * Agent-mode behavior (Phase 3): when the system prompt carries the
    * CODER TOOLS marker, the mock walks a scripted tool-use sequence so the
    * agent loop is fully testable offline. The script depends on how many
@@ -66,6 +93,13 @@ export class MockProvider implements Provider {
    */
   private agentReply(request: ChatRequest): string {
     const system = request.messages.find((m) => m.role === "system")?.content ?? "";
+    const roleMatch = /CODER AGENT ROLE:\s*([A-Za-z_-]+)/.exec(system);
+    if (roleMatch) {
+      const lastUser = [...request.messages].reverse().find((m) => m.role === "user")?.content ?? "";
+      // A role step that also has the TOOLS marker still emits tool calls;
+      // a plain role step emits its deterministic completion.
+      if (!system.includes("CODER TOOLS")) return this.roleReply(roleMatch[1]!, lastUser);
+    }
     if (!system.includes("CODER TOOLS")) return this.reply(request);
 
     const assistantTurns = request.messages.filter((m) => m.role === "assistant").length;

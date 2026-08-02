@@ -111,6 +111,31 @@ export { paths, coderHome, ensureCoderDirs } from "./utils/paths.js";
 export { SseDecoder, parseSse } from "./utils/sse.js";
 export { estimateTokens, humanBytes, renderTable as _renderTable } from "./utils/format.js";
 
+// Phases 4–11 — platform layers
+export { AGENT_ROLES, getAgentRole, listAgentRoles } from "./orchestration/roles.js";
+export { planTask, orchestrateTask } from "./orchestration/pipeline.js";
+export { WorkflowManager } from "./orchestration/workflows.js";
+export { CognitiveCore, cognitive } from "./cognitive/core.js";
+export { evolveTask, researchTopic } from "./cognitive/loops.js";
+export { ScopedMemory, canonicalScope } from "./session/memory/scoped.js";
+export { OrganizationManager } from "./organizations/manager.js";
+export { KnowledgeGraph } from "./knowledge/graph.js";
+export { ModelRouter, classifyModel, estimateCost } from "./providers/router.js";
+export { DIRECTORS, allocateDirectors, getDirector } from "./civilization/directors.js";
+export { runCivilization } from "./civilization/run.js";
+export { SyncOutbox } from "./offline/outbox.js";
+export { RecoveryEngine } from "./offline/recovery.js";
+export { ConnectionManager } from "./offline/connect.js";
+export { DaemonManager } from "./pet/daemon.js";
+export { TaskQueue } from "./tasks/queue.js";
+export { McpManager } from "./mcp/manager.js";
+export { ExtensionManager } from "./extensions/manager.js";
+export { SkillManager } from "./skills/manager.js";
+export { ExecutionMode, parseMode } from "./runtime/modes.js";
+export { runTask } from "./runtime/run.js";
+export { buildStatus, renderStatus } from "./runtime/status.js";
+export { ClusterManager } from "./runtime/cluster.js";
+
 // Types
 export type {
   ChatMessage,

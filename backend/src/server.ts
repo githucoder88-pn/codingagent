@@ -18,6 +18,7 @@ import { chatRouter } from "./api/chat.routes.js";
 import { adminRouter } from "./api/admin.routes.js";
 import { dataRouter } from "./api/data.routes.js";
 import { workspaceRouter } from "./api/workspace.routes.js";
+import { VERSION } from "../../src/core/constants/index.js";
 import { errorHandler, authMiddleware } from "./auth/middleware.js";
 import { createUser, findUserByEmail, setUserRole, writeAudit } from "./database/repos.js";
 import { scryptHash } from "./auth/auth.js";
@@ -71,9 +72,10 @@ export async function createServer(config: ServerConfig): Promise<BackendContext
   app.disable("x-powered-by");
   app.use(express.json({ limit: "2mb" }));
 
-  // Health endpoint (no auth).
+  // Health endpoint (no auth). Version always read from the single source of
+  // truth in src/core/constants (never a hardcoded string).
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, version: "0.2.0", name: "coder-backend" });
+    res.json({ ok: true, version: VERSION, name: "coder-backend" });
   });
 
   // Resolve the signed-in user (when a valid Bearer token is present);
